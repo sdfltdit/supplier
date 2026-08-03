@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { db, initSchema } from './db.js';
-import { sendSupplierNotification } from './email.js';
+import { sendSupplierConfirmation, sendInternalNotification } from './email.js';
 
 const app = express();
 app.use(express.json());
@@ -104,9 +104,10 @@ app.post('/api/suppliers', async (req, res) => {
       ],
     });
 
-    // Fire-and-continue: notification failure must not fail the submission,
+    // Fire-and-continue: email failures must not fail the submission,
     // since the record is already safely stored at this point.
-    sendSupplierNotification(record).catch((err) => console.error('Notification error:', err));
+    sendSupplierConfirmation(record).catch((err) => console.error('Supplier confirmation error:', err));
+    sendInternalNotification(record).catch((err) => console.error('Internal notification error:', err));
 
     res.status(201).json({ success: true, message: 'Supplier registered successfully.' });
   } catch (err) {

@@ -26,14 +26,24 @@ See `.env.example` for the full list. All of these must be set as real
 environment variables in Render's dashboard for production — not
 committed to this repo.
 
+## Two emails per submission
+
+1. **Supplier confirmation** (`sendSupplierConfirmation`) — sent to the
+   supplier's own email, from `supplier@sdfltd.com`, confirming their data
+   was received. Reply-To is `contact@sdfltd.com`, so if the supplier
+   replies, it goes to the real SDF contact inbox.
+2. **Internal notification** (`sendInternalNotification`) — sent to SDF's
+   own internal inbox (`SUPPLIER_NOTIFY_EMAIL`) so staff know a new
+   submission came in. Never seen by the supplier.
+
 | Variable | Purpose |
 |---|---|
 | `TURSO_DATABASE_URL` | Turso database connection URL |
 | `TURSO_AUTH_TOKEN` | Turso auth token |
 | `RESEND_API_KEY` | Resend API key |
-| `RESEND_FROM_ADDRESS` | Verified sender address (sdfltd.com is verified in Resend) |
-| `RESEND_REPLY_TO_ADDRESS` | Where a reply to a notification email should go — kept separate from `SUPPLIER_NOTIFY_EMAIL` so the internal inbox is never exposed as a reply target |
-| `SUPPLIER_NOTIFY_EMAIL` | Internal inbox where new-submission alerts land |
+| `RESEND_FROM_ADDRESS` | Verified sender address (sdfltd.com is verified in Resend) — used for both emails |
+| `RESEND_REPLY_TO_ADDRESS` | Reply-to for both emails — where a reply should land (contact@sdfltd.com) |
+| `SUPPLIER_NOTIFY_EMAIL` | SDF's own internal inbox for new-submission alerts (e.g. sdfltdit@gmail.com) — fine to use directly here, since this email is internal-only and the supplier never sees it |
 | `ALLOWED_ORIGIN` | CORS — the frontend domain allowed to call this API |
 | `ADMIN_API_KEY` | Shared secret for the internal search endpoint |
 

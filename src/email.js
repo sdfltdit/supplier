@@ -1,15 +1,20 @@
 // ─────────────────────────────────────────────────────────────
 // Resend email notifications.
 // RESEND_API_KEY comes from environment variable.
+// sdfltd.com is verified in the Resend Dashboard.
 //
-// sdfltd.com is verified in the Resend Dashboard (confirmed), so
-// RESEND_FROM_ADDRESS can be a real @sdfltd.com address.
+// Two separate emails are sent per submission:
 //
-// Reply-To is set separately from From/To, on purpose: notifications
-// go out from supplier@sdfltd.com and land in an internal inbox, but
-// if anyone replies to that notification, it should go to
-// RESEND_REPLY_TO_ADDRESS (contact@sdfltd.com) — not back into the
-// internal inbox, which should stay unexposed.
+// 1. sendSupplierConfirmation() — goes OUT to the supplier who submitted
+//    the form, from supplier@sdfltd.com, confirming their data was
+//    received. Reply-To is set to contact@sdfltd.com, so if the supplier
+//    replies, it lands at the real SDF contact inbox, not this backend's
+//    sending address.
+//
+// 2. sendInternalNotification() — goes to SDF's own internal inbox
+//    (SUPPLIER_NOTIFY_EMAIL, e.g. sdfltdit@gmail.com) so SDF knows a new
+//    submission came in. This one is never seen by the supplier, so
+//    there's no need to hide the internal address here.
 // ─────────────────────────────────────────────────────────────
 import { Resend } from 'resend';
 
@@ -19,24 +24,19 @@ if (!process.env.RESEND_API_KEY) {
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'onboarding@resend.dev';
-// NOTIFY_TO must be an @sdfltd.com address (e.g. contact@sdfltd.com), NOT the
-// internal Gmail directly. The "To" header of an email is visible to the
-// recipient no matter what — Reply-To does not hide it. If the internal
-// inbox needs to stay off the header entirely, set up a forward from
-// contact@sdfltd.com to the internal Gmail (in Gmail/Workspace settings),
-// and point SUPPLIER_NOTIFY_EMAIL at contact@sdfltd.com, not the Gmail address.
-const NOTIFY_TO = process.env.SUPPLIER_NOTIFY_EMAIL;
-const REPLY_TO_ADDRESS = process.env.RESEND_REPLY_TO_ADDRESS || FROM_ADDRESS;
+const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'onboarding@resend.dev'; // e.g. supplier@sdfltd.com
+const REPLY_TO_ADDRESS = process.env.RESEND_REPLY_TO_ADDRESS || FROM_ADDRESS;    // e.g. contact@sdfltd.com — where supplier replies should land
+const INTERNAL_NOTIFY_TO = process.env.SUPPLIER_NOTIFY_EMAIL;                    // e.g. sdfltdit@gmail.com — SDF's own inbox, internal only
 
-export async function sendSupplierNotification(record) {
-  if (!NOTIFY_TO) {
-    console.warn('SUPPLIER_NOTIFY_EMAIL not set — skipping email notification.');
-    return { skipped: true };
-  }
+// Strip CR/LF from anything going into an email Subject header — form
+// input is public/unauthenticated, and a newline there could be used to
+// inject extra email headers.
+function safeSubjectPart(str) {
+  return String(str ?? '').replace(/[\r\n]/g, ' ');
+}
 
-  const html = `
-    <h2>New Supplier Registration</h2>
+function buildRecordSummaryHtml(record) {
+  return `
     <p><strong>Company / Individual:</strong> ${escapeHtml(record.company_name)}</p>
     <p><strong>Supplies:</strong> ${escapeHtml(record.supplies)}${record.supplies_other ? ` (${escapeHtml(record.supplies_other)})` : ''}</p>
     <p><strong>Country:</strong> ${escapeHtml(record.country)}</p>
@@ -48,26 +48,68 @@ export async function sendSupplierNotification(record) {
     <p><strong>Payment mode:</strong> ${escapeHtml(record.payment_mode)}</p>
     ${record.lab_dip_time ? `<p><strong>Lab dip time:</strong> ${escapeHtml(record.lab_dip_time)}</p>` : ''}
     ${record.lab_dip_charge ? `<p><strong>Lab dip charge:</strong> ${escapeHtml(record.lab_dip_charge)}${record.lab_dip_amount ? ` (${escapeHtml(record.lab_dip_amount)})` : ''}</p>` : ''}
-    <p style="color:#888;font-size:0.85rem;">Submitted via supplier.sdfltd.com</p>
+  `;
+}
+
+// ── 1. Confirmation email TO the supplier ──────────────────────
+export async function sendSupplierConfirmation(record) {
+  if (!record.email) {
+    console.warn('No supplier email on record — skipping confirmation email.');
+    return { skipped: true };
+  }
+
+  const html = `
+    <h2>We've received your registration</h2>
+    <p>Thank you, ${escapeHtml(record.company_name)}. SDF Clothing Ltd has received the following information:</p>
+    ${buildRecordSummaryHtml(record)}
+    <p style="color:#888;font-size:0.85rem;">
+      This confirms we have your information on file. Submission of this form does not
+      constitute a Purchase Order or business commitment — see our
+      <a href="https://sdfltd.com/terms">Terms &amp; Conditions</a> for details.
+      If anything above is incorrect, reply to this email to let us know.
+    </p>
   `;
 
-  // Strip CR/LF from anything going into the Subject header — company_name
-  // is public, unauthenticated form input, and a newline there could be used
-  // to inject extra email headers (header injection).
-  const safeCompanyName = String(record.company_name).replace(/[\r\n]/g, ' ');
-
   const { data, error } = await resend.emails.send({
-    from: `SDF Supplier Portal <${FROM_ADDRESS}>`,
-    to: [NOTIFY_TO],
+    from: `SDF Clothing <${FROM_ADDRESS}>`,
+    to: [record.email],
     replyTo: REPLY_TO_ADDRESS,
-    subject: `New Supplier Registration — ${safeCompanyName}`,
+    subject: `We've received your supplier registration — SDF Clothing Ltd`,
     html,
   });
 
   if (error) {
-    // Don't throw — a failed notification email should not fail the whole
+    // Don't throw — a failed confirmation email should not fail the
     // submission. The record is already saved in Turso by this point.
-    console.error('Resend email failed:', error);
+    console.error('Supplier confirmation email failed:', error);
+    return { success: false, error };
+  }
+  return { success: true, data };
+}
+
+// ── 2. Internal notification TO SDF's own inbox ─────────────────
+export async function sendInternalNotification(record) {
+  if (!INTERNAL_NOTIFY_TO) {
+    console.warn('SUPPLIER_NOTIFY_EMAIL not set — skipping internal notification.');
+    return { skipped: true };
+  }
+
+  const html = `
+    <h2>New Supplier Registration</h2>
+    ${buildRecordSummaryHtml(record)}
+    <p style="color:#888;font-size:0.85rem;">Submitted via supplier.sdfltd.com</p>
+  `;
+
+  const { data, error } = await resend.emails.send({
+    from: `SDF Supplier Portal <${FROM_ADDRESS}>`,
+    to: [INTERNAL_NOTIFY_TO],
+    replyTo: REPLY_TO_ADDRESS,
+    subject: `New Supplier Registration — ${safeSubjectPart(record.company_name)}`,
+    html,
+  });
+
+  if (error) {
+    console.error('Internal notification email failed:', error);
     return { success: false, error };
   }
   return { success: true, data };
