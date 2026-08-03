@@ -31,8 +31,9 @@ committed to this repo.
 | `TURSO_DATABASE_URL` | Turso database connection URL |
 | `TURSO_AUTH_TOKEN` | Turso auth token |
 | `RESEND_API_KEY` | Resend API key |
-| `RESEND_FROM_ADDRESS` | Verified sender address (see note below) |
-| `SUPPLIER_NOTIFY_EMAIL` | Where new-submission alerts are sent |
+| `RESEND_FROM_ADDRESS` | Verified sender address (sdfltd.com is verified in Resend) |
+| `RESEND_REPLY_TO_ADDRESS` | Where a reply to a notification email should go — kept separate from `SUPPLIER_NOTIFY_EMAIL` so the internal inbox is never exposed as a reply target |
+| `SUPPLIER_NOTIFY_EMAIL` | Internal inbox where new-submission alerts land |
 | `ALLOWED_ORIGIN` | CORS — the frontend domain allowed to call this API |
 | `ADMIN_API_KEY` | Shared secret for the internal search endpoint |
 
@@ -48,11 +49,12 @@ committed to this repo.
 
 These are flagged deliberately rather than silently left out:
 
-1. **Resend domain verification**: to send from an `@sdfltd.com` address,
-   the domain must be verified in the Resend Dashboard first (Domains →
-   Add Domain → add the DNS records in Cloudflare). Until then, sending
-   with a custom `from` address will fail — `onboarding@resend.dev` works
-   without verification, for testing only.
+1. **Resend domain verification**: confirmed — `sdfltd.com` is verified in the
+   Resend Dashboard, so `RESEND_FROM_ADDRESS` can be a real `@sdfltd.com`
+   address. Notifications currently send from `supplier@sdfltd.com`, land in
+   an internal inbox (`SUPPLIER_NOTIFY_EMAIL`), and use `contact@sdfltd.com`
+   as the reply-to address so the internal inbox is never exposed as
+   somewhere a reply would go.
 
 2. **Admin endpoint auth is a placeholder.** `ADMIN_API_KEY` is a single
    shared secret sent as a header — functional, but not a real login

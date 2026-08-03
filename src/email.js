@@ -2,13 +2,14 @@
 // Resend email notifications.
 // RESEND_API_KEY comes from environment variable.
 //
-// [IMPORTANT — SETUP STEP NOT YET DONE]:
-// To send FROM an sdfltd.com address (e.g. notifications@sdfltd.com),
-// that domain must first be verified in the Resend Dashboard
-// (Resend > Domains > Add Domain > add the DNS records they give you
-// in Cloudflare). Until that's done, sending will fail for a custom
-// "from" address — Resend's own onboarding@resend.dev sender works
-// without verification, as a fallback for testing only.
+// sdfltd.com is verified in the Resend Dashboard (confirmed), so
+// RESEND_FROM_ADDRESS can be a real @sdfltd.com address.
+//
+// Reply-To is set separately from From/To, on purpose: notifications
+// go out from supplier@sdfltd.com and land in an internal inbox, but
+// if anyone replies to that notification, it should go to
+// RESEND_REPLY_TO_ADDRESS (contact@sdfltd.com) — not back into the
+// internal inbox, which should stay unexposed.
 // ─────────────────────────────────────────────────────────────
 import { Resend } from 'resend';
 
@@ -19,7 +20,8 @@ if (!process.env.RESEND_API_KEY) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'onboarding@resend.dev'; // [VERIFY] switch to a verified sdfltd.com address once domain is set up in Resend
-const NOTIFY_TO = process.env.SUPPLIER_NOTIFY_EMAIL; // where SDF's team receives new-submission alerts
+const NOTIFY_TO = process.env.SUPPLIER_NOTIFY_EMAIL; // where SDF's team receives new-submission alerts (internal inbox)
+const REPLY_TO_ADDRESS = process.env.RESEND_REPLY_TO_ADDRESS || FROM_ADDRESS; // where a reply to this notification should go — keeps the internal inbox out of any reply chain
 
 export async function sendSupplierNotification(record) {
   if (!NOTIFY_TO) {
@@ -43,10 +45,16 @@ export async function sendSupplierNotification(record) {
     <p style="color:#888;font-size:0.85rem;">Submitted via supplier.sdfltd.com</p>
   `;
 
+  // Strip CR/LF from anything going into the Subject header — company_name
+  // is public, unauthenticated form input, and a newline there could be used
+  // to inject extra email headers (header injection).
+  const safeCompanyName = String(record.company_name).replace(/[\r\n]/g, ' ');
+
   const { data, error } = await resend.emails.send({
     from: `SDF Supplier Portal <${FROM_ADDRESS}>`,
     to: [NOTIFY_TO],
-    subject: `New Supplier Registration — ${record.company_name}`,
+    replyTo: REPLY_TO_ADDRESS,
+    subject: `New Supplier Registration — ${safeCompanyName}`,
     html,
   });
 
