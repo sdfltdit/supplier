@@ -19,9 +19,15 @@ if (!process.env.RESEND_API_KEY) {
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'onboarding@resend.dev'; // [VERIFY] switch to a verified sdfltd.com address once domain is set up in Resend
-const NOTIFY_TO = process.env.SUPPLIER_NOTIFY_EMAIL; // where SDF's team receives new-submission alerts (internal inbox)
-const REPLY_TO_ADDRESS = process.env.RESEND_REPLY_TO_ADDRESS || FROM_ADDRESS; // where a reply to this notification should go — keeps the internal inbox out of any reply chain
+const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'onboarding@resend.dev';
+// NOTIFY_TO must be an @sdfltd.com address (e.g. contact@sdfltd.com), NOT the
+// internal Gmail directly. The "To" header of an email is visible to the
+// recipient no matter what — Reply-To does not hide it. If the internal
+// inbox needs to stay off the header entirely, set up a forward from
+// contact@sdfltd.com to the internal Gmail (in Gmail/Workspace settings),
+// and point SUPPLIER_NOTIFY_EMAIL at contact@sdfltd.com, not the Gmail address.
+const NOTIFY_TO = process.env.SUPPLIER_NOTIFY_EMAIL;
+const REPLY_TO_ADDRESS = process.env.RESEND_REPLY_TO_ADDRESS || FROM_ADDRESS;
 
 export async function sendSupplierNotification(record) {
   if (!NOTIFY_TO) {
