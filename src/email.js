@@ -36,18 +36,43 @@ function safeSubjectPart(str) {
 }
 
 function buildRecordSummaryHtml(record) {
+  const rows = [
+    ['Company / Individual', record.company_name],
+    ['Supplies', record.supplies + (record.supplies_other ? ` (${record.supplies_other})` : '')],
+    ['Country', record.country],
+    ['Address', record.full_address],
+    ['Mobile', record.mobile],
+    ['WhatsApp', record.whatsapp],
+    ['Email', record.email],
+    ['Sample delivery time', record.sample_delivery_time],
+    ['Payment mode', record.payment_mode],
+  ];
+  if (record.lab_dip_time) rows.push(['Lab dip time', record.lab_dip_time]);
+  if (record.lab_dip_charge) rows.push(['Lab dip charge', record.lab_dip_charge + (record.lab_dip_amount ? ` (${record.lab_dip_amount})` : '')]);
+
   return `
-    <p><strong>Company / Individual:</strong> ${escapeHtml(record.company_name)}</p>
-    <p><strong>Supplies:</strong> ${escapeHtml(record.supplies)}${record.supplies_other ? ` (${escapeHtml(record.supplies_other)})` : ''}</p>
-    <p><strong>Country:</strong> ${escapeHtml(record.country)}</p>
-    <p><strong>Address:</strong> ${escapeHtml(record.full_address)}</p>
-    <p><strong>Mobile:</strong> ${escapeHtml(record.mobile)}</p>
-    <p><strong>WhatsApp:</strong> ${escapeHtml(record.whatsapp)}</p>
-    <p><strong>Email:</strong> ${escapeHtml(record.email)}</p>
-    <p><strong>Sample delivery time:</strong> ${escapeHtml(record.sample_delivery_time)}</p>
-    <p><strong>Payment mode:</strong> ${escapeHtml(record.payment_mode)}</p>
-    ${record.lab_dip_time ? `<p><strong>Lab dip time:</strong> ${escapeHtml(record.lab_dip_time)}</p>` : ''}
-    ${record.lab_dip_charge ? `<p><strong>Lab dip charge:</strong> ${escapeHtml(record.lab_dip_charge)}${record.lab_dip_amount ? ` (${escapeHtml(record.lab_dip_amount)})` : ''}</p>` : ''}
+    <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:20px 0;">
+      ${rows.map(([label, value]) => `
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:13px;width:180px;vertical-align:top;">${escapeHtml(label)}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #eee;color:#111;font-size:14px;vertical-align:top;">${escapeHtml(value)}</td>
+        </tr>
+      `).join('')}
+    </table>
+  `;
+}
+
+function emailWrapper(bodyHtml) {
+  return `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111;">
+      <div style="border-bottom:2px solid #e00;padding-bottom:16px;margin-bottom:24px;">
+        <div style="font-size:18px;font-weight:700;letter-spacing:0.02em;">SDF CLOTHING LTD</div>
+      </div>
+      ${bodyHtml}
+      <div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;color:#999;font-size:12px;line-height:1.6;">
+        SDF Clothing Ltd &middot; Dhaka, Bangladesh &middot; <a href="https://sdfltd.com" style="color:#999;">sdfltd.com</a>
+      </div>
+    </div>
   `;
 }
 
@@ -58,15 +83,18 @@ export async function sendSupplierConfirmation(record) {
     return { skipped: true };
   }
 
-  const html = `
-    <h2>We've received your registration</h2>
-    <p>Thank you, ${escapeHtml(record.company_name)}. SDF Clothing Ltd has received the following information:</p>
+  const body = `
+    <p style="font-size:15px;line-height:1.6;margin:0 0 8px;">Dear ${escapeHtml(record.company_name)},</p>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 8px;">
+      Thank you for your interest in supplying to SDF Clothing Ltd. We confirm the following
+      details have been received and are on file with us:
+    </p>
     ${buildRecordSummaryHtml(record)}
-    <p style="color:#888;font-size:0.85rem;">
-      This confirms we have your information on file. Submission of this form does not
-      constitute a Purchase Order or business commitment — see our
-      <a href="https://sdfltd.com/terms">Terms &amp; Conditions</a> for details.
-      If anything above is incorrect, reply to this email to let us know.
+    <p style="font-size:13px;line-height:1.6;color:#666;margin:0;">
+      This does not constitute a Purchase Order or business commitment. Under our
+      <a href="https://sdfltd.com/terms" style="color:#e00;">Terms &amp; Conditions</a>, an order is
+      confirmed only upon a signed Purchase Order, advance payment, and sample approval.
+      If any of the information above needs to be corrected, simply reply to this email.
     </p>
   `;
 
@@ -74,8 +102,8 @@ export async function sendSupplierConfirmation(record) {
     from: `SDF Clothing <${FROM_ADDRESS}>`,
     to: [record.email],
     replyTo: REPLY_TO_ADDRESS,
-    subject: `We've received your supplier registration — SDF Clothing Ltd`,
-    html,
+    subject: `SDF Clothing — Information Received`,
+    html: emailWrapper(body),
   });
 
   if (error) {
@@ -94,18 +122,21 @@ export async function sendInternalNotification(record) {
     return { skipped: true };
   }
 
-  const html = `
-    <h2>New Supplier Registration</h2>
+  const body = `
+    <p style="font-size:15px;line-height:1.6;margin:0 0 4px;">New supplier entry submitted:</p>
     ${buildRecordSummaryHtml(record)}
-    <p style="color:#888;font-size:0.85rem;">Submitted via supplier.sdfltd.com</p>
+    <p style="font-size:12px;color:#999;margin:0;">
+      Submitted via supplier.sdfltd.com
+      ${record.ip_address ? ` &middot; IP ${escapeHtml(record.ip_address)}` : ''}
+    </p>
   `;
 
   const { data, error } = await resend.emails.send({
     from: `SDF Supplier Portal <${FROM_ADDRESS}>`,
     to: [INTERNAL_NOTIFY_TO],
     replyTo: REPLY_TO_ADDRESS,
-    subject: `New Supplier Registration — ${safeSubjectPart(record.company_name)}`,
-    html,
+    subject: `New Supplier: ${safeSubjectPart(record.company_name)}`,
+    html: emailWrapper(body),
   });
 
   if (error) {

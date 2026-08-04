@@ -11,6 +11,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json());
 
+// Render sits behind its own reverse proxy, so without this, req.ip would
+// return Render's internal proxy address instead of the real visitor IP.
+// 'trust proxy' tells Express to read the X-Forwarded-For header instead.
+app.set('trust proxy', true);
+
 // ─────────────────────────────────────────────────────────────
 // Serve the supplier registration form itself from this same backend/
 // domain. Doing this (rather than hosting the form on a different
@@ -102,17 +107,34 @@ app.post('/api/suppliers', async (req, res) => {
       // this endpoint — deliberately left out until that's decided,
       // rather than silently dropping/losing uploaded files.
       profile_file_url: null,
+      ip_address: req.ip || null,
+      user_agent: req.headers['user-agent'] || null,
     };
+
+    // Explicit duplicate check (rather than relying only on the DB's unique
+    // constraint) so we can return a clear, specific message instead of a
+    // raw constraint-violation error.
+    const existing = await db.execute({
+      sql: `SELECT id FROM suppliers WHERE email = ? AND mobile = ? LIMIT 1`,
+      args: [record.email, record.mobile],
+    });
+    if (existing.rows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        errors: ['This company\'s information is already in our database. If anything has changed, please contact us directly.'],
+      });
+    }
 
     await db.execute({
       sql: `INSERT INTO suppliers
-        (company_name, supplies, supplies_other, country, full_address, mobile, whatsapp, email, sample_delivery_time, payment_mode, lab_dip_time, lab_dip_charge, lab_dip_amount, profile_file_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (company_name, supplies, supplies_other, country, full_address, mobile, whatsapp, email, sample_delivery_time, payment_mode, lab_dip_time, lab_dip_charge, lab_dip_amount, profile_file_url, ip_address, user_agent)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         record.company_name, record.supplies, record.supplies_other, record.country,
         record.full_address, record.mobile, record.whatsapp, record.email,
         record.sample_delivery_time, record.payment_mode, record.lab_dip_time,
         record.lab_dip_charge, record.lab_dip_amount, record.profile_file_url,
+        record.ip_address, record.user_agent,
       ],
     });
 
@@ -121,7 +143,15 @@ app.post('/api/suppliers', async (req, res) => {
     sendSupplierConfirmation(record).catch((err) => console.error('Supplier confirmation error:', err));
     sendInternalNotification(record).catch((err) => console.error('Internal notification error:', err));
 
-    res.status(201).json({ success: true, message: 'Supplier registered successfully.' });
+    res.status(201).json({
+      success: true,
+      message: 'Your information has been received.',
+      footprint: {
+        ip_address: record.ip_address,
+        user_agent: record.user_agent,
+        submitted_at: new Date().toISOString(),
+      },
+    });
   } catch (err) {
     console.error('Submission error:', err);
     res.status(500).json({ success: false, errors: ['Internal server error. Please try again.'] });
