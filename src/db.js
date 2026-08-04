@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS suppliers (
   lab_dip_time TEXT,                   -- only set if Fabric selected
   lab_dip_charge TEXT,                 -- 'Yes' / 'No', only if Fabric selected
   lab_dip_amount TEXT,                 -- optional, only if lab_dip_charge = 'Yes'
-  profile_file_url TEXT,               -- [TODO] not yet wired to storage — see server.js note
+  profile_file_name TEXT,              -- original filename, e.g. "company-profile.pdf"
+  profile_file_data TEXT,              -- base64-encoded PDF content, stored directly in Turso
   ip_address TEXT,                     -- submitter's IP at time of submission
   user_agent TEXT,                     -- submitter's browser/device string
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -53,6 +54,8 @@ CREATE INDEX IF NOT EXISTS idx_suppliers_supplies ON suppliers(supplies);
 const MIGRATIONS = [
   { sql: `ALTER TABLE suppliers ADD COLUMN ip_address TEXT`, ignoreIfIncludes: 'duplicate column' },
   { sql: `ALTER TABLE suppliers ADD COLUMN user_agent TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN profile_file_name TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN profile_file_data TEXT`, ignoreIfIncludes: 'duplicate column' },
   // Prevents the same email+mobile combination from being inserted twice.
   // If existing data already has a duplicate pair, this will fail — that's
   // deliberately NOT swallowed below, since silently skipping it would mean

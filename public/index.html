@@ -45,6 +45,12 @@
   }
   .field__input:focus { border-color: #ff3333; }
   select.field__input { cursor: pointer; }
+  .field__input--file { padding: 0.5rem 0.75rem; cursor: pointer; }
+  .field__input--file::file-selector-button {
+    background: var(--color-primary); color: #fff; border: none; padding: 0.4rem 0.9rem;
+    font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase;
+    border-radius: 2px; cursor: pointer; margin-right: 0.75rem; font-family: inherit;
+  }
   .field__hint { font-size: 0.72rem; color: rgba(255,255,255,0.45); margin-top: 0.3rem; }
   .field__error { font-size: 0.75rem; color: #ff6666; margin-top: 0.3rem; }
 
@@ -200,6 +206,12 @@
           </select>
         </div>
 
+        <div class="field">
+          <label for="sup-profile-file" class="field__label">Upload Company Profile</label>
+          <input type="file" id="sup-profile-file" accept="application/pdf,.pdf" class="field__input field__input--file" />
+          <p id="fileError" class="field__error" style="display:none;"></p>
+        </div>
+
         <div id="fabricFields" class="fabric-panel" style="display:none;">
           <p class="fabric-panel__hint">Only shown if "Fabric" is selected above.</p>
           <div class="field">
@@ -268,6 +280,30 @@
   const errorsBox = document.getElementById('formErrors');
   const submitBtn = document.getElementById('submitBtn');
   const successModal = document.getElementById('successModal');
+  const profileFileInput = document.getElementById('sup-profile-file');
+  const fileErrorEl = document.getElementById('fileError');
+  const MAX_FILE_MB = 5;
+
+  function validateProfileFile() {
+    const file = profileFileInput.files && profileFileInput.files[0];
+    if (!file) return null; // no file selected — allowed, this field doesn't block submission
+    const isPdfType = file.type === 'application/pdf';
+    const isPdfExt = file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdfType || !isPdfExt) return 'Only PDF files are accepted.';
+    if (file.size > MAX_FILE_MB * 1024 * 1024) return `File is too large — maximum size is ${MAX_FILE_MB}MB.`;
+    return null;
+  }
+
+  profileFileInput.addEventListener('change', () => {
+    const err = validateProfileFile();
+    if (err) {
+      fileErrorEl.textContent = err;
+      fileErrorEl.style.display = '';
+      profileFileInput.value = '';
+    } else {
+      fileErrorEl.style.display = 'none';
+    }
+  });
   const modalCloseBtn = document.getElementById('modalCloseBtn');
 
   modalCloseBtn.addEventListener('click', () => {
@@ -345,6 +381,9 @@
       else labDipCharge = chosen.value;
     }
 
+    const fileErr = validateProfileFile();
+    if (fileErr) errors.push(fileErr);
+
     if (errors.length > 0) {
       errorsBox.innerHTML = '<strong>Please fix the following:</strong><ul>' + errors.map((e) => `<li>${e}</li>`).join('') + '</ul>';
       errorsBox.style.display = '';
@@ -356,28 +395,32 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting…';
 
-    const payload = {
-      website_url: document.getElementById('website_url').value,
-      company_name: document.getElementById('sup-name').value.trim(),
-      supplies: selectedSupplies,
-      supplies_other: othersInput.value.trim() || undefined,
-      country: document.getElementById('sup-country').value,
-      full_address: document.getElementById('sup-address').value.trim(),
-      mobile: document.getElementById('sup-mobile').value.trim(),
-      whatsapp: document.getElementById('sup-whatsapp').value.trim(),
-      email: document.getElementById('sup-email').value.trim(),
-      sample_delivery_time: document.getElementById('sup-sample-time').value,
-      payment_mode: document.getElementById('sup-payment').value,
-      lab_dip_time: labDipTimeSelect.value || undefined,
-      lab_dip_charge: labDipCharge || undefined,
-      lab_dip_amount: document.getElementById('sup-labdip-amount').value.trim() || undefined,
-    };
+    const payload = new FormData();
+    payload.append('website_url', document.getElementById('website_url').value);
+    payload.append('company_name', document.getElementById('sup-name').value.trim());
+    selectedSupplies.forEach((s) => payload.append('supplies', s));
+    if (othersInput.value.trim()) payload.append('supplies_other', othersInput.value.trim());
+    payload.append('country', document.getElementById('sup-country').value);
+    payload.append('full_address', document.getElementById('sup-address').value.trim());
+    payload.append('mobile', document.getElementById('sup-mobile').value.trim());
+    payload.append('whatsapp', document.getElementById('sup-whatsapp').value.trim());
+    payload.append('email', document.getElementById('sup-email').value.trim());
+    payload.append('sample_delivery_time', document.getElementById('sup-sample-time').value);
+    payload.append('payment_mode', document.getElementById('sup-payment').value);
+    if (labDipTimeSelect.value) payload.append('lab_dip_time', labDipTimeSelect.value);
+    if (labDipCharge) payload.append('lab_dip_charge', labDipCharge);
+    const labDipAmount = document.getElementById('sup-labdip-amount').value.trim();
+    if (labDipAmount) payload.append('lab_dip_amount', labDipAmount);
+    const profileFile = profileFileInput.files && profileFileInput.files[0];
+    if (profileFile) payload.append('profile_file', profileFile);
 
     try {
+      // No explicit Content-Type header here — the browser sets the correct
+      // multipart/form-data boundary automatically when the body is a
+      // FormData instance. Setting it manually would break the boundary.
       const res = await fetch('/api/suppliers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: payload,
       });
       const result = await res.json();
 
