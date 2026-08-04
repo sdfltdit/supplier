@@ -65,12 +65,13 @@ function buildRecordSummaryHtml(record) {
 function emailWrapper(bodyHtml) {
   return `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111;">
-      <div style="border-bottom:2px solid #e00;padding-bottom:16px;margin-bottom:24px;">
-        <div style="font-size:18px;font-weight:700;letter-spacing:0.02em;">SDF CLOTHING LTD</div>
+      <div style="display:flex;align-items:center;gap:10px;border-bottom:2px solid #e00;padding-bottom:16px;margin-bottom:24px;">
+        <img src="https://supplier.sdfltd.com/logo.jpg" alt="SDF Clothing" width="36" height="36" style="display:block;border:0;" />
+        <div style="font-size:18px;font-weight:700;letter-spacing:0.02em;">SDF CLOTHING</div>
       </div>
       ${bodyHtml}
       <div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;color:#999;font-size:12px;line-height:1.6;">
-        SDF Clothing Ltd &middot; Dhaka, Bangladesh &middot; <a href="https://sdfltd.com" style="color:#999;">sdfltd.com</a>
+        SDF Clothing &middot; Dhaka, Bangladesh &middot; <a href="https://sdfltd.com" style="color:#999;">sdfltd.com</a>
       </div>
     </div>
   `;
@@ -86,7 +87,7 @@ export async function sendSupplierConfirmation(record) {
   const body = `
     <p style="font-size:15px;line-height:1.6;margin:0 0 8px;">Dear ${escapeHtml(record.company_name)},</p>
     <p style="font-size:15px;line-height:1.6;margin:0 0 8px;">
-      Thank you for your interest in supplying to SDF Clothing Ltd. We confirm the following
+      Thank you for your interest in supplying to SDF Clothing. We confirm the following
       details have been received and are on file with us:
     </p>
     ${buildRecordSummaryHtml(record)}

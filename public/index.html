@@ -3,8 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="robots" content="noindex, follow" />
-<title>Supplier Registration | SDF Clothing Ltd</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<title>Supplier Registration | SDF Clothing</title>
 <style>
   :root {
     --color-primary: #e00;
@@ -22,6 +27,9 @@
     margin: 0; padding: 0;
   }
   .container { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  .brand-header { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.5rem; }
+  .brand-header__logo { width: 2.75rem; height: 2.75rem; object-fit: contain; }
+  .brand-header__name { font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; }
   h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 600; margin-bottom: 0.75rem; line-height: 1.2; }
   .subtitle { color: var(--color-text-muted); font-size: 1rem; line-height: 1.8; margin-bottom: 2.5rem; }
 
@@ -107,14 +115,18 @@
 </head>
 <body>
   <div class="container">
+    <div class="brand-header">
+      <img src="/logo.jpg" alt="SDF Clothing" class="brand-header__logo" />
+      <span class="brand-header__name">SDF Clothing</span>
+    </div>
     <h1>Supplier Registration</h1>
-    <p class="subtitle">Register your company so SDF Clothing Ltd can contact you directly when a relevant sourcing need arises.</p>
+    <p class="subtitle">Register your company so SDF Clothing can contact you directly when a relevant sourcing need arises.</p>
 
     <div class="notice-box">
       <h2 class="notice-box__title">Notice to Suppliers</h2>
-      <p class="notice-box__text">All procurement by SDF Clothing Ltd is carried out exclusively through our <strong>Nominated / Approved Suppliers and Factories</strong>. No purchasing decision is made with any supplier outside this list.</p>
+      <p class="notice-box__text">All procurement by SDF Clothing is carried out exclusively through our <strong>Nominated / Approved Suppliers and Factories</strong>. No purchasing decision is made with any supplier outside this list.</p>
       <p class="notice-box__text">Where a future requirement arises, we will initiate contact directly. To enable this, please complete the form below so your information is on record.</p>
-      <p class="notice-box__text"><strong>Clarification:</strong> Submission of this form does not constitute a Purchase Order, business commitment, or guarantee of future transaction. Under our <a href="https://sdfltd.com/terms" class="notice-box__link">Terms &amp; Conditions</a>, an order is Confirmed only upon a signed Purchase Order, receipt of the required advance payment, and sample approval. Accuracy of the information submitted remains the supplier's responsibility.</p>
+      <p class="notice-box__text"><strong>Clarification:</strong> Submission of this form does not constitute a Purchase Order, business commitment, or guarantee of future transaction. Under our <a href="https://sdfltd.com/terms" class="notice-box__link">Terms &amp; Conditions</a>, an order is confirmed only upon a signed Purchase Order, receipt of the required advance payment, and sample approval. Accuracy of the information submitted remains the supplier's responsibility.</p>
       <p class="notice-box__text"><strong>Confidentiality:</strong> Information submitted is retained and processed in accordance with our <a href="https://sdfltd.com/privacy" class="notice-box__link">Privacy Policy</a> and will not be sold or disclosed to any third party.</p>
       <p class="notice-box__text notice-box__text--last"><strong>Acceptance:</strong> By submitting this form, you agree to be bound by our Terms &amp; Conditions and Privacy Policy.</p>
     </div>
@@ -250,7 +262,7 @@
     <div class="modal">
       <div class="modal__icon">&#10003;</div>
       <h3 class="modal__title">Thank you — your information has been received.</h3>
-      <p class="modal__text">A confirmation has been sent to your email. SDF Clothing Ltd will contact you directly if a relevant requirement arises.</p>
+      <p class="modal__text">A confirmation has been sent to your email. SDF Clothing will contact you directly if a relevant requirement arises.</p>
       <div class="modal__footprint">
         <div class="modal__footprint-title">Submission Record</div>
         <div class="modal__footprint-row"><span>Submitted at</span><span id="fp-time">—</span></div>
