@@ -65,10 +65,14 @@ function buildRecordSummaryHtml(record) {
 function emailWrapper(bodyHtml) {
   return `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111;">
-      <div style="display:flex;align-items:center;gap:10px;border-bottom:2px solid #e00;padding-bottom:16px;margin-bottom:24px;">
-        <img src="https://supplier.sdfltd.com/logo.jpg" alt="SDF Clothing" width="36" height="36" style="display:block;border:0;" />
-        <div style="font-size:18px;font-weight:700;letter-spacing:0.02em;">SDF CLOTHING</div>
-      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-bottom:2px solid #e00;padding-bottom:20px;margin-bottom:24px;">
+        <tr>
+          <td align="center">
+            <img src="https://supplier.sdfltd.com/logo.jpg" alt="SDF Clothing" width="72" height="63" style="display:block;border:0;margin:0 auto 10px;" />
+            <div style="font-size:20px;font-weight:700;letter-spacing:0.04em;">SDF CLOTHING</div>
+          </td>
+        </tr>
+      </table>
       ${bodyHtml}
       <div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;color:#999;font-size:12px;line-height:1.6;">
         SDF Clothing &middot; Dhaka, Bangladesh &middot; <a href="https://sdfltd.com" style="color:#999;">sdfltd.com</a>
