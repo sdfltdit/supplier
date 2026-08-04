@@ -118,6 +118,13 @@
       <p class="form-hint">Fields marked * are required.</p>
 
       <form id="supplierForm">
+        <!-- Honeypot: hidden from real users, most simple bots fill every
+             field they find. Left blank by humans, any value here signals
+             spam and the backend rejects it. -->
+        <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+          <label for="website_url">Website</label>
+          <input type="text" id="website_url" name="website_url" tabindex="-1" autocomplete="off" />
+        </div>
         <div class="field">
           <label for="sup-name" class="field__label">Company / Individual Name *</label>
           <input type="text" id="sup-name" required placeholder="Company or individual name" class="field__input" />
@@ -350,6 +357,7 @@
     submitBtn.textContent = 'Submitting…';
 
     const payload = {
+      website_url: document.getElementById('website_url').value,
       company_name: document.getElementById('sup-name').value.trim(),
       supplies: selectedSupplies,
       supplies_other: othersInput.value.trim() || undefined,
