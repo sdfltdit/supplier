@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, follow" />
+<title>Supplier Registration | SDF Clothing Ltd</title>
+<style>
+  :root {
+    --color-primary: #e00;
+    --color-primary-dark: #b00;
+    --color-text: #fff;
+    --color-text-muted: #ccc;
+    --color-bg: #0a0a0a;
+    --color-bg-alt: #111;
+    --color-border: #333;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--color-bg); color: var(--color-text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0; padding: 0;
+  }
+  .container { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 600; margin-bottom: 0.75rem; line-height: 1.2; }
+  .subtitle { color: var(--color-text-muted); font-size: 1rem; line-height: 1.8; margin-bottom: 2.5rem; }
+
+  .notice-box { background: #0a0a0a; border: 1px solid var(--color-primary); border-radius: 4px; padding: 1.75rem; margin-bottom: 2.5rem; }
+  .notice-box__title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .notice-box__text { font-size: 0.9rem; color: rgba(255,255,255,0.8); line-height: 1.8; margin-bottom: 1rem; }
+  .notice-box__text--last { margin-bottom: 0; }
+  .notice-box__link { color: var(--color-primary); text-decoration: underline; }
+
+  .form-box { background: #050505; border: 1px solid #222; border-radius: 4px; padding: 1.75rem; }
+  .form-box h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .form-hint { color: rgba(255,255,255,0.5); font-size: 0.8rem; margin-bottom: 1.5rem; }
+
+  .field { margin-bottom: 1.1rem; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .field-grid .field { margin-bottom: 1.1rem; }
+  .field__label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+  .field__input {
+    background: #000; border: 1px solid var(--color-primary); color: #fff; padding: 0.6rem 0.75rem;
+    font-size: 0.88rem; width: 100%; outline: none; font-family: inherit; border-radius: 2px;
+  }
+  .field__input:focus { border-color: #ff3333; }
+  select.field__input { cursor: pointer; }
+  .field__hint { font-size: 0.72rem; color: rgba(255,255,255,0.45); margin-top: 0.3rem; }
+  .field__error { font-size: 0.75rem; color: #ff6666; margin-top: 0.3rem; }
+
+  .pill-group { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .pill {
+    display: flex; align-items: center; gap: 0.45rem; background: #000; border: 1px solid #333;
+    border-radius: 999px; padding: 0.45rem 1rem; cursor: pointer; font-size: 0.82rem; color: #ccc;
+  }
+  .pill.is-checked { border-color: var(--color-primary); color: #fff; background: rgba(224,0,0,0.1); }
+  .pill__input { accent-color: var(--color-primary); width: 0.95rem; height: 0.95rem; }
+
+  .fabric-panel { background: rgba(224,0,0,0.06); border: 1px solid rgba(224,0,0,0.3); border-radius: 4px; padding: 1.25rem; margin-bottom: 1.1rem; }
+  .fabric-panel__hint { font-size: 0.75rem; color: var(--color-primary); font-style: italic; margin-bottom: 1rem; }
+
+  .radio-label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: #ccc; cursor: pointer; }
+  .radio-input { accent-color: var(--color-primary); width: 1rem; height: 1rem; }
+
+  .form-errors { background: rgba(224,0,0,0.1); border: 1px solid var(--color-primary); border-radius: 4px; padding: 0.9rem 1.1rem; margin-bottom: 1.1rem; font-size: 0.82rem; color: #ff8080; line-height: 1.6; }
+  .form-errors ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
+
+  .submit-btn {
+    background: var(--color-primary); color: #fff; border: none; padding: 0.85rem 1.5rem; font-size: 0.85rem;
+    letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; font-family: inherit;
+    width: 100%; min-height: 48px; border-radius: 2px; font-weight: 600;
+  }
+  .submit-btn:hover { background: var(--color-primary-dark); }
+  .submit-btn:disabled { background: #555; cursor: not-allowed; }
+
+  .form-fineprint { font-size: 0.72rem; color: rgba(255,255,255,0.5); text-align: center; margin-top: 1rem; line-height: 1.6; }
+
+  @media (max-width: 640px) { .field-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Supplier Registration</h1>
+    <p class="subtitle">Register your company so SDF Clothing Ltd can contact you directly when a relevant sourcing need arises.</p>
+
+    <div class="notice-box">
+      <h2 class="notice-box__title">Notice to Suppliers</h2>
+      <p class="notice-box__text">All procurement by SDF Clothing Ltd is carried out exclusively through our <strong>Nominated / Approved Suppliers and Factories</strong>. No purchasing decision is made with any supplier outside this list.</p>
+      <p class="notice-box__text">Where a future requirement arises, we will initiate contact directly. To enable this, please complete the form below so your information is on record.</p>
+      <p class="notice-box__text"><strong>Clarification:</strong> Submission of this form does not constitute a Purchase Order, business commitment, or guarantee of future transaction. Under our <a href="https://sdfltd.com/terms" class="notice-box__link">Terms &amp; Conditions</a>, an order is Confirmed only upon a signed Purchase Order, receipt of the required advance payment, and sample approval. Accuracy of the information submitted remains the supplier's responsibility.</p>
+      <p class="notice-box__text"><strong>Confidentiality:</strong> Information submitted is retained and processed in accordance with our <a href="https://sdfltd.com/privacy" class="notice-box__link">Privacy Policy</a> and will not be sold or disclosed to any third party.</p>
+      <p class="notice-box__text notice-box__text--last"><strong>Acceptance:</strong> By submitting this form, you agree to be bound by our Terms &amp; Conditions and Privacy Policy.</p>
+    </div>
+
+    <div class="form-box">
+      <h2>Supplier Information Form</h2>
+      <p class="form-hint">Fields marked * are required.</p>
+
+      <form id="supplierForm">
+        <div class="field">
+          <label for="sup-name" class="field__label">Company / Individual Name *</label>
+          <input type="text" id="sup-name" required placeholder="Company or individual name" class="field__input" />
+        </div>
+
+        <div class="field">
+          <label class="field__label">What Do You Supply? *</label>
+          <div id="supplyPills" class="pill-group">
+            <label class="pill"><input type="checkbox" class="pill__input" value="Fabric" /><span>Fabric</span></label>
+            <label class="pill"><input type="checkbox" class="pill__input" value="Yarn" /><span>Yarn</span></label>
+            <label class="pill"><input type="checkbox" class="pill__input" value="Trims" /><span>Trims</span></label>
+            <label class="pill"><input type="checkbox" class="pill__input" value="Chemical" /><span>Chemical</span></label>
+            <label class="pill"><input type="checkbox" class="pill__input" value="Print" /><span>Print</span></label>
+            <label class="pill"><input type="checkbox" class="pill__input" value="Embroidery" /><span>Embroidery</span></label>
+            <label class="pill"><input type="checkbox" class="pill__input" value="Wash / Stone" /><span>Wash / Stone</span></label>
+            <label class="pill"><input type="checkbox" class="pill__input" value="Packaging" /><span>Packaging</span></label>
+            <label class="pill"><input type="checkbox" class="pill__input" value="Others" /><span>Others</span></label>
+          </div>
+          <div id="othersFieldWrap" class="field" style="display:none; margin-top:0.75rem;">
+            <label for="sup-others" class="field__label">Please Specify What You Supply *</label>
+            <input type="text" id="sup-others" placeholder="e.g. Machinery parts, logistics service" class="field__input" />
+          </div>
+        </div>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="sup-country" class="field__label">Country *</label>
+            <select id="sup-country" required class="field__input">
+              <option value="">Select country</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sup-payment" class="field__label">Payment Mode *</label>
+            <select id="sup-payment" required class="field__input">
+              <option value="">Select payment mode</option>
+              <option>LC</option>
+              <option>TT</option>
+              <option>Cash</option>
+              <option>Others</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="sup-address" class="field__label">Full Address *</label>
+          <textarea id="sup-address" required rows="3" placeholder="House/road, area, district, postal code" class="field__input" style="resize:vertical;"></textarea>
+        </div>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="sup-mobile" class="field__label">Mobile Number *</label>
+            <input type="tel" id="sup-mobile" required placeholder="+880 1XXXXXXXXX" class="field__input" />
+          </div>
+          <div class="field">
+            <label for="sup-whatsapp" class="field__label">WhatsApp Number *</label>
+            <input type="text" id="sup-whatsapp" required placeholder="Same as mobile, or different number" class="field__input" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="sup-email" class="field__label">Email *</label>
+          <input type="email" id="sup-email" required placeholder="your@company.com" class="field__input" />
+        </div>
+
+        <div class="field">
+          <label for="sup-sample-time" class="field__label">Sample Delivery Time *</label>
+          <select id="sup-sample-time" required class="field__input">
+            <option value="">Select delivery time</option>
+            <option>1-3 days</option>
+            <option>3-7 days</option>
+            <option>7-15 days</option>
+            <option>15+ days</option>
+          </select>
+        </div>
+
+        <div id="fabricFields" class="fabric-panel" style="display:none;">
+          <p class="fabric-panel__hint">Only shown if "Fabric" is selected above.</p>
+          <div class="field">
+            <label for="sup-labdip-time" class="field__label">Lab Dip Development Time *</label>
+            <select id="sup-labdip-time" class="field__input">
+              <option value="">Select lab dip time</option>
+              <option>1-3 days</option>
+              <option>3-7 days</option>
+              <option>7-15 days</option>
+              <option>15+ days</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label">Lab Dip Charge? *</label>
+            <div style="display:flex; gap:1.5rem; margin-top:0.3rem;">
+              <label class="radio-label"><input type="radio" name="labDipCharge" value="Yes" class="radio-input" /> Yes</label>
+              <label class="radio-label"><input type="radio" name="labDipCharge" value="No" class="radio-input" /> No</label>
+            </div>
+          </div>
+          <div id="labDipAmountWrap" class="field" style="display:none;">
+            <label for="sup-labdip-amount" class="field__label">Lab Dip Charge Amount (optional)</label>
+            <input type="text" id="sup-labdip-amount" placeholder="e.g. $15 per lab dip" class="field__input" />
+          </div>
+        </div>
+
+        <div id="formErrors" class="form-errors" style="display:none;"></div>
+        <div id="formSuccess" style="display:none; text-align:center; padding:2rem 1rem;">
+          <h3 style="margin-bottom:0.5rem;">Thank you — your information has been received.</h3>
+          <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">A confirmation has been sent to your email. SDF Clothing Ltd will contact you directly if a relevant requirement arises.</p>
+        </div>
+
+        <button type="submit" id="submitBtn" class="submit-btn">Submit</button>
+        <p class="form-fineprint">By submitting, you agree to our <a href="https://sdfltd.com/terms" class="notice-box__link">Terms &amp; Conditions</a> and <a href="https://sdfltd.com/privacy" class="notice-box__link">Privacy Policy</a>.</p>
+      </form>
+    </div>
+  </div>
+
+<script>
+  const COUNTRIES = ["Bangladesh","China","India","Pakistan","Vietnam","Other","Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Belgium","Brazil","Cambodia","Canada","Chile","Colombia","Denmark","Egypt","Ethiopia","Finland","France","Germany","Greece","Hong Kong","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Japan","Jordan","Kenya","South Korea","Kuwait","Laos","Lebanon","Malaysia","Mexico","Morocco","Myanmar","Nepal","Netherlands","New Zealand","Nigeria","Norway","Oman","Philippines","Poland","Portugal","Qatar","Russia","Saudi Arabia","Singapore","South Africa","Spain","Sri Lanka","Sweden","Switzerland","Taiwan","Thailand","Turkey","UAE","UK","USA","Uzbekistan"];
+  const countrySelect = document.getElementById('sup-country');
+  COUNTRIES.forEach((c) => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    countrySelect.appendChild(opt);
+  });
+
+  const supplyPillsContainer = document.getElementById('supplyPills');
+  const othersWrap = document.getElementById('othersFieldWrap');
+  const othersInput = document.getElementById('sup-others');
+  const fabricFields = document.getElementById('fabricFields');
+  const labDipTimeSelect = document.getElementById('sup-labdip-time');
+  const labDipAmountWrap = document.getElementById('labDipAmountWrap');
+  const form = document.getElementById('supplierForm');
+  const errorsBox = document.getElementById('formErrors');
+  const successBox = document.getElementById('formSuccess');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function getCheckedSupplies() {
+    return Array.from(supplyPillsContainer.querySelectorAll('.pill__input:checked')).map((el) => el.value);
+  }
+
+  function updatePillStyles() {
+    supplyPillsContainer.querySelectorAll('.pill').forEach((label) => {
+      const input = label.querySelector('.pill__input');
+      label.classList.toggle('is-checked', input.checked);
+    });
+  }
+
+  function syncConditionalFields() {
+    updatePillStyles();
+    const selected = getCheckedSupplies();
+    const hasOthers = selected.includes('Others');
+    const hasFabric = selected.includes('Fabric');
+
+    othersWrap.style.display = hasOthers ? '' : 'none';
+    othersInput.required = hasOthers;
+    if (!hasOthers) othersInput.value = '';
+
+    fabricFields.style.display = hasFabric ? '' : 'none';
+    labDipTimeSelect.required = hasFabric;
+    if (!hasFabric) {
+      labDipTimeSelect.value = '';
+      fabricFields.querySelectorAll('input[name="labDipCharge"]').forEach((r) => (r.checked = false));
+      labDipAmountWrap.style.display = 'none';
+    }
+  }
+
+  supplyPillsContainer.addEventListener('change', syncConditionalFields);
+
+  fabricFields.addEventListener('change', (e) => {
+    if (e.target.name === 'labDipCharge') {
+      labDipAmountWrap.style.display = e.target.value === 'Yes' ? '' : 'none';
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errors = [];
+
+    const requiredFields = [
+      { id: 'sup-name', label: 'Company / Individual Name' },
+      { id: 'sup-country', label: 'Country' },
+      { id: 'sup-payment', label: 'Payment Mode' },
+      { id: 'sup-address', label: 'Full Address' },
+      { id: 'sup-mobile', label: 'Mobile Number' },
+      { id: 'sup-whatsapp', label: 'WhatsApp Number' },
+      { id: 'sup-email', label: 'Email' },
+      { id: 'sup-sample-time', label: 'Sample Delivery Time' },
+    ];
+    requiredFields.forEach(({ id, label }) => {
+      const el = document.getElementById(id);
+      if (!el.value.trim()) errors.push(label + ' is required.');
+    });
+
+    const selectedSupplies = getCheckedSupplies();
+    if (selectedSupplies.length === 0) errors.push('Select at least one option under "What Do You Supply?"');
+    if (selectedSupplies.includes('Others') && !othersInput.value.trim()) {
+      errors.push('Please specify what you supply (Others selected).');
+    }
+
+    let labDipCharge = null;
+    if (selectedSupplies.includes('Fabric')) {
+      if (!labDipTimeSelect.value) errors.push('Lab Dip Development Time is required for fabric suppliers.');
+      const chosen = fabricFields.querySelector('input[name="labDipCharge"]:checked');
+      if (!chosen) errors.push('Please answer whether Lab Dip Charge applies.');
+      else labDipCharge = chosen.value;
+    }
+
+    if (errors.length > 0) {
+      errorsBox.innerHTML = '<strong>Please fix the following:</strong><ul>' + errors.map((e) => `<li>${e}</li>`).join('') + '</ul>';
+      errorsBox.style.display = '';
+      errorsBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    errorsBox.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    const payload = {
+      company_name: document.getElementById('sup-name').value.trim(),
+      supplies: selectedSupplies,
+      supplies_other: othersInput.value.trim() || undefined,
+      country: document.getElementById('sup-country').value,
+      full_address: document.getElementById('sup-address').value.trim(),
+      mobile: document.getElementById('sup-mobile').value.trim(),
+      whatsapp: document.getElementById('sup-whatsapp').value.trim(),
+      email: document.getElementById('sup-email').value.trim(),
+      sample_delivery_time: document.getElementById('sup-sample-time').value,
+      payment_mode: document.getElementById('sup-payment').value,
+      lab_dip_time: labDipTimeSelect.value || undefined,
+      lab_dip_charge: labDipCharge || undefined,
+      lab_dip_amount: document.getElementById('sup-labdip-amount').value.trim() || undefined,
+    };
+
+    try {
+      const res = await fetch('/api/suppliers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        form.querySelectorAll('input, select, textarea, button').forEach((el) => (el.style.display = 'none'));
+        successBox.style.display = '';
+      } else {
+        errorsBox.innerHTML = '<strong>Please fix the following:</strong><ul>' + (result.errors || ['Submission failed.']).map((e) => `<li>${e}</li>`).join('') + '</ul>';
+        errorsBox.style.display = '';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit';
+      }
+    } catch (err) {
+      errorsBox.innerHTML = '<strong>Something went wrong.</strong> Please try again, or email us directly.';
+      errorsBox.style.display = '';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit';
+    }
+  });
+</script>
+</body>
+</html>

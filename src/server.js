@@ -1,11 +1,23 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { db, initSchema } from './db.js';
 import { sendSupplierConfirmation, sendInternalNotification } from './email.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
 app.use(express.json());
+
+// ─────────────────────────────────────────────────────────────
+// Serve the supplier registration form itself from this same backend/
+// domain. Doing this (rather than hosting the form on a different
+// domain that calls this API) avoids CORS and CSP cross-origin issues
+// entirely, since the page and the API it calls share an origin.
+// ─────────────────────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ─────────────────────────────────────────────────────────────
 // CORS: only allow the actual supplier-facing site to call this API.
