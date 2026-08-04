@@ -68,7 +68,7 @@ function emailWrapper(bodyHtml) {
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-bottom:2px solid #e00;padding-bottom:20px;margin-bottom:24px;">
         <tr>
           <td align="center">
-            <img src="https://supplier.sdfltd.com/logo.jpg" alt="SDF Clothing" width="72" height="63" style="display:block;border:0;margin:0 auto 10px;" />
+            <img src="https://supplier.sdfltd.com/logo.jpg" alt="SDF Clothing" width="110" height="96" style="display:block;border:0;margin:0 auto 12px;" />
             <div style="font-size:20px;font-weight:700;letter-spacing:0.04em;">SDF CLOTHING</div>
           </td>
         </tr>
@@ -130,6 +130,7 @@ export async function sendInternalNotification(record) {
   const body = `
     <p style="font-size:15px;line-height:1.6;margin:0 0 4px;">New supplier entry submitted:</p>
     ${buildRecordSummaryHtml(record)}
+    ${record.profile_file_data ? `<p style="font-size:13px;color:#444;margin:0 0 8px;">Company profile attached: ${escapeHtml(record.profile_file_name || 'profile.pdf')}</p>` : ''}
     <p style="font-size:12px;color:#999;margin:0;">
       Submitted via supplier.sdfltd.com
       ${record.ip_address ? ` &middot; IP ${escapeHtml(record.ip_address)}` : ''}
@@ -142,6 +143,13 @@ export async function sendInternalNotification(record) {
     replyTo: REPLY_TO_ADDRESS,
     subject: `New Supplier: ${safeSubjectPart(record.company_name)}`,
     html: emailWrapper(body),
+    // Attach the uploaded PDF directly (base64, already stored that way in
+    // Turso) when one exists, so staff have it in-hand without a separate
+    // admin-API call. Omitted entirely when there's no file rather than
+    // sending an empty/null attachments array.
+    ...(record.profile_file_data
+      ? { attachments: [{ filename: record.profile_file_name || 'company-profile.pdf', content: record.profile_file_data }] }
+      : {}),
   });
 
   if (error) {
