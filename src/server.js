@@ -128,6 +128,60 @@ const MAX_LENGTHS = {
 // through.
 const PHONE_PATTERN = /^\+?[\d\s\-()]{7,20}$/;
 
+// ─────────────────────────────────────────────────────────────
+// Blocklist: SDF's own contact points, blocked from being used AS THE
+// SUBMITTER's email/phone on this form. This is not about blocking people
+// from reaching SDF -- it's to stop someone submitting a fake/spam entry
+// using SDF's own internal identifiers as if they were an outside supplier.
+//
+// Phone numbers are compared digits-only, regardless of how the submitter
+// formats them (+880171..., 880171..., 01711..., with spaces/dashes/
+// parens, etc.) -- formatting differences must not be a way around this.
+// normalizePhone() strips everything but digits and, if the result starts
+// with a local Bangladeshi trunk "0" long enough to be a full number,
+// also stores a version with that leading 0 removed, so "01711160511"
+// and "+8801711160511" match as the same underlying number.
+// ─────────────────────────────────────────────────────────────
+const BLOCKED_EMAIL_DOMAINS = ['sdfltd.com'];
+const BLOCKED_EMAILS = ['sdfltdit@gmail.com'];
+const BLOCKED_PHONES_RAW = ['+8801819172080', '+8801711160511', '+16465356343', '+8801309001058'];
+
+function normalizePhone(raw) {
+  return String(raw || '').replace(/\D/g, '');
+}
+
+function phoneVariants(digitsOnly) {
+  // A national-format Bangladeshi mobile number is 11 digits starting
+  // with 0 (e.g. 01711160511); its international form drops the leading
+  // 0 and adds the 880 country code (8801711160511). Generating both
+  // directions means a blocked number matches no matter which way the
+  // submitter typed it.
+  const variants = new Set([digitsOnly]);
+  if (digitsOnly.startsWith('880') && digitsOnly.length === 13) {
+    variants.add('0' + digitsOnly.slice(3));
+  }
+  if (digitsOnly.startsWith('0') && digitsOnly.length === 11) {
+    variants.add('880' + digitsOnly.slice(1));
+  }
+  return variants;
+}
+
+const BLOCKED_PHONE_DIGIT_SETS = BLOCKED_PHONES_RAW.map((p) => phoneVariants(normalizePhone(p)));
+
+function isBlockedPhone(raw) {
+  const digits = normalizePhone(raw);
+  if (!digits) return false;
+  return BLOCKED_PHONE_DIGIT_SETS.some((variantSet) => variantSet.has(digits));
+}
+
+function isBlockedEmail(raw) {
+  const email = String(raw || '').trim().toLowerCase();
+  if (!email) return false;
+  if (BLOCKED_EMAILS.includes(email)) return true;
+  const domain = email.split('@')[1];
+  return !!domain && BLOCKED_EMAIL_DOMAINS.includes(domain);
+}
+
 function validateSubmission(body) {
   const errors = [];
 
@@ -185,12 +239,21 @@ function validateSubmission(body) {
   if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
     errors.push('email is not a valid email address.');
   }
+  if (body.email && isBlockedEmail(body.email)) {
+    // Deliberately the same generic wording used elsewhere for
+    // "submission could not be processed" cases -- no reason to reveal
+    // that this specific email/domain is on a blocklist.
+    errors.push('Submission could not be processed.');
+  }
 
   if (body.mobile && !PHONE_PATTERN.test(body.mobile)) {
     errors.push('mobile does not look like a valid phone number.');
   }
   if (body.whatsapp && !PHONE_PATTERN.test(body.whatsapp)) {
     errors.push('whatsapp does not look like a valid phone number.');
+  }
+  if ((body.mobile && isBlockedPhone(body.mobile)) || (body.whatsapp && isBlockedPhone(body.whatsapp))) {
+    errors.push('Submission could not be processed.');
   }
 
   return { errors, supplies };
@@ -293,11 +356,6 @@ app.post('/api/suppliers', submitLimiter, (req, res, next) => {
     res.status(201).json({
       success: true,
       message: 'Your information has been received.',
-      footprint: {
-        ip_address: record.ip_address,
-        user_agent: record.user_agent,
-        submitted_at: new Date().toISOString(),
-      },
     });
   } catch (err) {
     console.error('Submission error:', err);

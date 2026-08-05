@@ -102,12 +102,6 @@
   }
   .modal__title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.6rem; }
   .modal__text { color: var(--color-text-muted); font-size: 0.85rem; line-height: 1.7; margin-bottom: 1.25rem; }
-  .modal__footprint { background: #050505; border: 1px solid #222; border-radius: 4px; padding: 1rem; text-align: left; }
-  .modal__footprint-title { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); font-weight: 600; margin-bottom: 0.6rem; }
-  .modal__footprint-row { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.78rem; padding: 0.35rem 0; border-bottom: 1px solid #1a1a1a; }
-  .modal__footprint-row:last-child { border-bottom: none; }
-  .modal__footprint-row span:first-child { color: rgba(255,255,255,0.5); }
-  .modal__footprint-row span:last-child { color: #fff; text-align: right; word-break: break-word; max-width: 65%; }
 
   @media (max-width: 640px) { .field-grid { grid-template-columns: 1fr; } }
 </style>
@@ -261,12 +255,6 @@
       <div class="modal__icon">&#10003;</div>
       <h3 class="modal__title">Thank you — your information has been received.</h3>
       <p class="modal__text">A confirmation has been sent to your email. SDF Clothing will contact you directly if a relevant requirement arises.</p>
-      <div class="modal__footprint">
-        <div class="modal__footprint-title">Submission Record</div>
-        <div class="modal__footprint-row"><span>Submitted at</span><span id="fp-time">—</span></div>
-        <div class="modal__footprint-row"><span>IP address</span><span id="fp-ip">—</span></div>
-        <div class="modal__footprint-row"><span>Browser / device</span><span id="fp-agent">—</span></div>
-      </div>
       <button type="button" id="modalCloseBtn" class="submit-btn" style="margin-top:1.25rem;">Close</button>
     </div>
   </div>
@@ -439,13 +427,6 @@
         syncConditionalFields();
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit';
-
-        const fp = result.footprint || {};
-        document.getElementById('fp-time').textContent = fp.submitted_at
-          ? new Date(fp.submitted_at).toLocaleString()
-          : new Date().toLocaleString();
-        document.getElementById('fp-ip').textContent = fp.ip_address || 'Not available';
-        document.getElementById('fp-agent').textContent = fp.user_agent || navigator.userAgent;
         successModal.style.display = 'flex';
       } else {
         errorsBox.innerHTML = '<strong>' + (res.status === 409 ? 'Already registered' : 'Please fix the following') + ':</strong><ul>' + (result.errors || ['Submission failed.']).map((e) => `<li>${e}</li>`).join('') + '</ul>';
