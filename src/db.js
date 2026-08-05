@@ -38,7 +38,16 @@ CREATE TABLE IF NOT EXISTS suppliers (
   profile_file_name TEXT,              -- original filename, e.g. "company-profile.pdf"
   profile_file_data TEXT,              -- base64-encoded PDF content, stored directly in Turso
   ip_address TEXT,                     -- submitter's IP at time of submission
-  user_agent TEXT,                     -- submitter's browser/device string
+  user_agent TEXT,                     -- submitter's raw browser/device string
+  browser_name TEXT,                   -- parsed from user_agent, e.g. "Chrome 151"
+  os_name TEXT,                        -- parsed from user_agent, e.g. "Windows 10"
+  device_type TEXT,                    -- 'mobile' / 'tablet' / 'desktop' (best-effort)
+  referrer TEXT,                       -- Referer header, if present
+  accept_language TEXT,                -- Accept-Language header, if present
+  ip_country TEXT,                     -- from IP geolocation lookup
+  ip_city TEXT,                        -- from IP geolocation lookup
+  ip_isp TEXT,                         -- from IP geolocation lookup
+  ip_is_proxy_or_vpn INTEGER,          -- 1/0 boolean, from IP geolocation lookup
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -56,6 +65,15 @@ const MIGRATIONS = [
   { sql: `ALTER TABLE suppliers ADD COLUMN user_agent TEXT`, ignoreIfIncludes: 'duplicate column' },
   { sql: `ALTER TABLE suppliers ADD COLUMN profile_file_name TEXT`, ignoreIfIncludes: 'duplicate column' },
   { sql: `ALTER TABLE suppliers ADD COLUMN profile_file_data TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN browser_name TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN os_name TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN device_type TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN referrer TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN accept_language TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN ip_country TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN ip_city TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN ip_isp TEXT`, ignoreIfIncludes: 'duplicate column' },
+  { sql: `ALTER TABLE suppliers ADD COLUMN ip_is_proxy_or_vpn INTEGER`, ignoreIfIncludes: 'duplicate column' },
   // Prevents the same email+mobile combination from being inserted twice.
   // If existing data already has a duplicate pair, this will fail — that's
   // deliberately NOT swallowed below, since silently skipping it would mean

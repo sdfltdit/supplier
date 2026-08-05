@@ -129,24 +129,33 @@ export async function sendInternalNotification(record) {
 
   const submittedAt = new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka', dateStyle: 'medium', timeStyle: 'short' });
 
+  const locationParts = [record.ip_city, record.ip_country].filter(Boolean).join(', ');
+
+  const trackingRows = [
+    ['Submitted (Dhaka time)', submittedAt],
+    ['IP address', record.ip_address || 'Not available'],
+    ['Location (from IP)', locationParts || 'Not available'],
+    ['ISP / Network', record.ip_isp || 'Not available'],
+    ['Proxy / VPN / Datacenter IP', record.ip_is_proxy_or_vpn === null ? 'Unknown' : (record.ip_is_proxy_or_vpn ? 'Yes — review' : 'No')],
+    ['Browser', record.browser_name || 'Not available'],
+    ['Operating system', record.os_name || 'Not available'],
+    ['Device type', record.device_type || 'Not available'],
+    ['Referring page', record.referrer || 'Direct / none'],
+    ['Browser language', record.accept_language || 'Not available'],
+  ];
+
   const body = `
     <p style="font-size:15px;line-height:1.6;margin:0 0 4px;">New supplier entry submitted:</p>
     ${buildRecordSummaryHtml(record)}
     ${record.profile_file_data ? `<p style="font-size:13px;color:#444;margin:0 0 8px;">Company profile attached: ${escapeHtml(record.profile_file_name || 'profile.pdf')}</p>` : ''}
     <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:16px 0 0;background:#fafafa;border:1px solid #eee;border-radius:4px;">
       <tr><td colspan="2" style="padding:8px 12px;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#e00;font-weight:700;">Internal — Submission Tracking</td></tr>
-      <tr>
-        <td style="padding:6px 12px;color:#888;font-size:12px;width:140px;">Submitted (Dhaka time)</td>
-        <td style="padding:6px 12px;color:#333;font-size:12px;">${escapeHtml(submittedAt)}</td>
-      </tr>
-      <tr>
-        <td style="padding:6px 12px;color:#888;font-size:12px;">IP address</td>
-        <td style="padding:6px 12px;color:#333;font-size:12px;">${escapeHtml(record.ip_address || 'Not available')}</td>
-      </tr>
-      <tr>
-        <td style="padding:6px 12px;color:#888;font-size:12px;">Browser / device</td>
-        <td style="padding:6px 12px;color:#333;font-size:12px;word-break:break-word;">${escapeHtml(record.user_agent || 'Not available')}</td>
-      </tr>
+      ${trackingRows.map(([label, value]) => `
+        <tr>
+          <td style="padding:6px 12px;color:#888;font-size:12px;width:170px;vertical-align:top;">${escapeHtml(label)}</td>
+          <td style="padding:6px 12px;color:#333;font-size:12px;word-break:break-word;vertical-align:top;">${escapeHtml(value)}</td>
+        </tr>
+      `).join('')}
     </table>
     <p style="font-size:12px;color:#999;margin:8px 0 0;">Submitted via supplier.sdfltd.com</p>
   `;

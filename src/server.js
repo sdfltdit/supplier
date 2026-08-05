@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
+import { UAParser } from 'ua-parser-js';
 import { db, initSchema } from './db.js';
 import { sendSupplierConfirmation, sendInternalNotification } from './email.js';
 
@@ -41,13 +42,118 @@ const app = express();
 // oversized-payload abuse cheaply at the parsing layer.
 app.use(express.json({ limit: '50kb' }));
 
-// Render sits behind exactly one reverse proxy layer in front of this app.
-// Setting this to the specific number of hops (not `true`) is important:
-// `true` trusts the entire X-Forwarded-For header, including the leftmost
-// entry, which a client can set to anything — that would let an attacker
-// spoof a different IP on every request and bypass IP-based rate limiting
-// entirely. `1` trusts only the value Render's own proxy actually adds.
+// Render sits behind its own reverse proxy. app.set('trust proxy', 1) is
+// still set below as a baseline (needed for express-rate-limit to work
+// correctly at all), but is NOT relied on alone for the IP shown in
+// tracking/security info — in practice this returned an internal
+// 10.x.x.x address, which several Render community threads confirm is a
+// known quirk of Render's proxy chain, not a config mistake on this end.
+// getClientIp() below is the actual real-IP source used everywhere else in
+// this file, and is more defensive: it reads the FULL X-Forwarded-For
+// chain, strips known-private/internal ranges, and returns the first
+// remaining address, which is much less likely to be an internal hop.
 app.set('trust proxy', 1);
+
+const PRIVATE_IP_PATTERNS = [
+  /^10\./,                     // 10.0.0.0/8
+  /^127\./,                    // loopback
+  /^169\.254\./,               // link-local
+  /^172\.(1[6-9]|2\d|3[0-1])\./, // 172.16.0.0/12
+  /^192\.168\./,                // 192.168.0.0/16
+  /^::1$/,                      // IPv6 loopback
+  /^f[cd][0-9a-f]{2}:/i,        // IPv6 unique local (fc00::/7)
+];
+
+function isPrivateIp(ip) {
+  const clean = String(ip || '').trim();
+  return !clean || PRIVATE_IP_PATTERNS.some((pattern) => pattern.test(clean));
+}
+
+function getClientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) {
+    // X-Forwarded-For can be a comma-separated chain: client, proxy1, proxy2...
+    // Take the first entry that isn't a known-private address, since the
+    // proxy-added hops are typically private/internal infrastructure IPs.
+    const chain = String(xff).split(',').map((ip) => ip.trim());
+    const publicIp = chain.find((ip) => !isPrivateIp(ip));
+    if (publicIp) return publicIp;
+  }
+  // Cloudflare, if it's ever back in front of this service, sets this
+  // header specifically for the real visitor IP, unspoofable by the client
+  // since Cloudflare overwrites it at their edge.
+  if (req.headers['cf-connecting-ip']) return req.headers['cf-connecting-ip'];
+
+  // Last resort: Express's own computed req.ip (respects trust proxy
+  // above). May still be a private/internal address in Render's case, but
+  // better than nothing if no other header was present at all.
+  return req.ip || null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// IP geolocation lookup (country, city, ISP, proxy/VPN flag) via
+// ip-api.com — same free, no-API-key service already used elsewhere in
+// SDF's codebase (contact-form.js on the main site). Free tier allows 45
+// requests/minute over plain HTTP (no HTTPS on the free endpoint) — this
+// call happens server-to-server, not from the browser, so there's no
+// mixed-content concern, and it's well within the rate limit given this
+// endpoint's own 5-submissions-per-hour cap per IP.
+//
+// Best-effort only: a lookup failure or private/unroutable IP must not
+// block or fail the actual submission, so this always resolves to some
+// object (possibly all-null fields) rather than throwing.
+// ─────────────────────────────────────────────────────────────
+async function lookupIpInfo(ip) {
+  const empty = { country: null, city: null, isp: null, isProxyOrVpn: null };
+  if (!ip || isPrivateIp(ip)) return empty;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,city,isp,proxy,hosting`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeout);
+    if (!res.ok) return empty;
+    const data = await res.json();
+    if (data.status !== 'success') return empty;
+    return {
+      country: data.country || null,
+      city: data.city || null,
+      isp: data.isp || null,
+      // Either flag (known anonymizing proxy/VPN, or a datacenter/hosting
+      // IP rather than a residential one) is worth surfacing as "not a
+      // typical residential connection" for review purposes.
+      isProxyOrVpn: Boolean(data.proxy || data.hosting),
+    };
+  } catch (err) {
+    console.error('IP geolocation lookup failed (non-fatal):', err.message);
+    return empty;
+  }
+}
+
+function parseUserAgent(uaString) {
+  if (!uaString) return { browserName: null, osName: null, deviceType: null };
+  try {
+    const parser = new UAParser(uaString);
+    const result = parser.getResult();
+    const browserName = result.browser.name
+      ? `${result.browser.name}${result.browser.major ? ' ' + result.browser.major : ''}`
+      : null;
+    const osName = result.os.name
+      ? `${result.os.name}${result.os.version ? ' ' + result.os.version : ''}`
+      : null;
+    // ua-parser-js leaves device.type undefined for ordinary desktop
+    // browsers (it only labels mobile/tablet/console/etc explicitly), so
+    // absence of a type is treated as desktop rather than left blank.
+    const deviceType = result.device.type || 'desktop';
+    return { browserName, osName, deviceType };
+  } catch (err) {
+    console.error('User-agent parsing failed (non-fatal):', err.message);
+    return { browserName: null, osName: null, deviceType: null };
+  }
+}
 
 // ─────────────────────────────────────────────────────────────
 // Serve the supplier registration form itself from this same backend/
@@ -299,6 +405,14 @@ app.post('/api/suppliers', submitLimiter, (req, res, next) => {
       return res.status(400).json({ success: false, errors });
     }
 
+    const clientIp = getClientIp(req);
+    const uaString = req.headers['user-agent'] || null;
+    const { browserName, osName, deviceType } = parseUserAgent(uaString);
+    // Best-effort, non-blocking: a slow or failed geolocation lookup must
+    // not delay or break the actual submission. lookupIpInfo() already
+    // resolves to an all-null object on any failure rather than throwing.
+    const ipInfo = await lookupIpInfo(clientIp);
+
     const record = {
       company_name: req.body.company_name.trim(),
       supplies: supplies.join(', '),
@@ -315,8 +429,17 @@ app.post('/api/suppliers', submitLimiter, (req, res, next) => {
       lab_dip_amount: req.body.lab_dip_amount || null,
       profile_file_name: req.file ? req.file.originalname.slice(0, 255) : null,
       profile_file_data: req.file ? req.file.buffer.toString('base64') : null,
-      ip_address: req.ip || null,
-      user_agent: req.headers['user-agent'] || null,
+      ip_address: clientIp,
+      user_agent: uaString,
+      browser_name: browserName,
+      os_name: osName,
+      device_type: deviceType,
+      referrer: req.headers['referer'] || req.headers['referrer'] || null,
+      accept_language: req.headers['accept-language'] || null,
+      ip_country: ipInfo.country,
+      ip_city: ipInfo.city,
+      ip_isp: ipInfo.isp,
+      ip_is_proxy_or_vpn: ipInfo.isProxyOrVpn,
     };
 
     // Explicit duplicate check (rather than relying only on the DB's unique
@@ -335,14 +458,17 @@ app.post('/api/suppliers', submitLimiter, (req, res, next) => {
 
     await db.execute({
       sql: `INSERT INTO suppliers
-        (company_name, supplies, supplies_other, country, full_address, mobile, whatsapp, email, sample_delivery_time, payment_mode, lab_dip_time, lab_dip_charge, lab_dip_amount, profile_file_name, profile_file_data, ip_address, user_agent)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (company_name, supplies, supplies_other, country, full_address, mobile, whatsapp, email, sample_delivery_time, payment_mode, lab_dip_time, lab_dip_charge, lab_dip_amount, profile_file_name, profile_file_data, ip_address, user_agent, browser_name, os_name, device_type, referrer, accept_language, ip_country, ip_city, ip_isp, ip_is_proxy_or_vpn)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         record.company_name, record.supplies, record.supplies_other, record.country,
         record.full_address, record.mobile, record.whatsapp, record.email,
         record.sample_delivery_time, record.payment_mode, record.lab_dip_time,
         record.lab_dip_charge, record.lab_dip_amount, record.profile_file_name,
         record.profile_file_data, record.ip_address, record.user_agent,
+        record.browser_name, record.os_name, record.device_type,
+        record.referrer, record.accept_language, record.ip_country,
+        record.ip_city, record.ip_isp, record.ip_is_proxy_or_vpn === null ? null : (record.ip_is_proxy_or_vpn ? 1 : 0),
       ],
     });
 
@@ -402,7 +528,8 @@ app.get('/api/admin/suppliers', adminLimiter, async (req, res) => {
     mobile, whatsapp, email, sample_delivery_time, payment_mode, lab_dip_time,
     lab_dip_charge, lab_dip_amount, profile_file_name,
     (profile_file_data IS NOT NULL) AS has_profile_file,
-    ip_address, user_agent, created_at
+    ip_address, user_agent, browser_name, os_name, device_type, referrer,
+    accept_language, ip_country, ip_city, ip_isp, ip_is_proxy_or_vpn, created_at
     FROM suppliers WHERE 1=1`;
   const args = [];
 
