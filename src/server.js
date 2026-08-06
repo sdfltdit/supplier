@@ -562,10 +562,23 @@ app.get('/api/admin/suppliers', adminLimiter, async (req, res) => {
 });
 
 // ── GET /api/admin/suppliers/:id/profile-file — fetch one file ──
-// Same auth as the list endpoint. Serves the stored PDF as an actual file
-// download rather than embedding it in a JSON blob.
+// Same auth as the list endpoint, but ALSO accepts the key as a ?key=
+// query parameter, in addition to the x-admin-key header. This is
+// specifically because the admin UI links to this endpoint via a plain
+// <a href> (so a real "Download" link/tab works, and Content-Disposition
+// triggers a proper file save) — an anchor tag cannot set a custom
+// request header, only fetch() can, so query-string auth is the only way
+// a plain link can authenticate here at all.
+//
+// Trade-off, worth being explicit about: a URL with a secret in the query
+// string can end up in browser history or (if ever misconfigured) server
+// access logs. This is judged an acceptable trade-off for an internal-only
+// tool with a small, trusted staff audience — but it's why this fallback
+// exists ONLY on this one file-download route, not on the main search
+// endpoint, which stays header-only and is called via fetch() from the
+// admin UI's JS, never as a clickable link.
 app.get('/api/admin/suppliers/:id/profile-file', adminLimiter, async (req, res) => {
-  const providedKey = req.headers['x-admin-key'];
+  const providedKey = req.headers['x-admin-key'] || req.query.key;
   const expectedKey = process.env.ADMIN_API_KEY;
   const isAuthorized =
     !!expectedKey &&

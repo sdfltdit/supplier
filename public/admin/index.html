@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<title>Admin | SDF Clothing Supplier Portal</title>
+<style>
+  :root {
+    --color-primary: #e00;
+    --color-primary-dark: #b00;
+    --color-text: #fff;
+    --color-text-muted: #ccc;
+    --color-bg: #0a0a0a;
+    --color-bg-alt: #111;
+    --color-border: #333;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--color-bg); color: var(--color-text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0; padding: 0;
+  }
+
+  /* ── Login screen ─────────────────────────────────────── */
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+  }
+  .login-box {
+    background: #0a0a0a; border: 1px solid var(--color-primary); border-radius: 6px;
+    padding: 2rem; max-width: 360px; width: 100%;
+  }
+  .login-box h1 { font-size: 1.25rem; margin: 0 0 1.25rem; text-align: center; }
+  .login-box input {
+    width: 100%; background: #000; border: 1px solid var(--color-primary); color: #fff;
+    padding: 0.7rem 0.85rem; font-size: 0.9rem; border-radius: 4px; font-family: inherit; margin-bottom: 0.85rem;
+  }
+  .login-box button {
+    width: 100%; background: var(--color-primary); color: #fff; border: none; padding: 0.75rem;
+    font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 4px;
+    cursor: pointer; font-weight: 600; font-family: inherit;
+  }
+  .login-box button:hover { background: var(--color-primary-dark); }
+  .login-error { color: #ff6666; font-size: 0.8rem; margin-bottom: 0.85rem; display: none; }
+
+  /* ── Main dashboard ───────────────────────────────────── */
+  #dashboard { display: none; max-width: 1300px; margin: 0 auto; padding: 1.5rem; }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+  .dash-header h1 { font-size: 1.4rem; margin: 0; }
+  .logout-btn { background: transparent; border: 1px solid var(--color-border); color: var(--color-text-muted); padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
+  .logout-btn:hover { border-color: var(--color-primary); color: #fff; }
+
+  .filters { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; background: #0a0a0a; border: 1px solid var(--color-border); border-radius: 6px; padding: 1rem; }
+  .filters input, .filters select {
+    background: #000; border: 1px solid var(--color-border); color: #fff; padding: 0.55rem 0.75rem;
+    font-size: 0.85rem; border-radius: 4px; font-family: inherit;
+  }
+  .filters input:focus, .filters select:focus { border-color: var(--color-primary); outline: none; }
+  .filters input[type="text"] { flex: 1; min-width: 200px; }
+  .filters button {
+    background: var(--color-primary); color: #fff; border: none; padding: 0.55rem 1.2rem;
+    border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-family: inherit; font-weight: 600;
+  }
+  .filters button:hover { background: var(--color-primary-dark); }
+  .filters .clear-btn { background: transparent; border: 1px solid var(--color-border); color: var(--color-text-muted); }
+
+  .result-count { font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 0.75rem; }
+
+  .table-wrapper { overflow-x: auto; border: 1px solid var(--color-border); border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { background: #111; color: var(--color-primary); text-align: left; padding: 0.65rem 0.8rem; white-space: nowrap; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  td { padding: 0.65rem 0.8rem; border-top: 1px solid #1a1a1a; vertical-align: top; color: var(--color-text-muted); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .cell-company { color: #fff; font-weight: 600; white-space: nowrap; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+  .badge--proxy { background: rgba(224,0,0,0.15); color: var(--color-primary); }
+  .badge--clean { background: rgba(63,185,80,0.15); color: #3fb950; }
+  .file-link { color: var(--color-primary); text-decoration: none; font-size: 0.78rem; }
+  .file-link:hover { text-decoration: underline; }
+  .expand-btn { background: none; border: 1px solid var(--color-border); color: var(--color-text-muted); border-radius: 4px; padding: 0.2rem 0.5rem; cursor: pointer; font-size: 0.72rem; font-family: inherit; }
+  .expand-btn:hover { border-color: var(--color-primary); color: #fff; }
+  .tracking-row td { background: #050505; padding: 0.85rem; }
+  .tracking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem 1.5rem; }
+  .tracking-grid div span:first-child { display: block; color: #666; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tracking-grid div span:last-child { color: #ccc; font-size: 0.78rem; word-break: break-word; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--color-text-muted); }
+  .loading-state { text-align: center; padding: 3rem 1rem; color: var(--color-text-muted); }
+
+  @media (max-width: 700px) {
+    .filters { flex-direction: column; }
+    .filters input, .filters select, .filters button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ── Login screen ─────────────────────────────────────── -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <h1>SDF Supplier Portal — Admin</h1>
+      <p class="login-error" id="loginError">Incorrect key. Please try again.</p>
+      <input type="password" id="adminKeyInput" placeholder="Admin key" autocomplete="off" />
+      <button type="button" id="loginBtn">Log In</button>
+    </div>
+  </div>
+
+  <!-- ── Dashboard ────────────────────────────────────────── -->
+  <div id="dashboard">
+    <div class="dash-header">
+      <h1>Supplier Submissions</h1>
+      <button class="logout-btn" id="logoutBtn">Log Out</button>
+    </div>
+
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="Search company name or address…" />
+      <select id="categoryFilter">
+        <option value="">All categories</option>
+        <option>Fabric</option>
+        <option>Yarn</option>
+        <option>Trims</option>
+        <option>Chemical</option>
+        <option>Print</option>
+        <option>Embroidery</option>
+        <option>Wash / Stone</option>
+        <option>Packaging</option>
+        <option>Others</option>
+      </select>
+      <select id="countryFilter">
+        <option value="">All countries</option>
+      </select>
+      <select id="paymentFilter">
+        <option value="">All payment modes</option>
+        <option>LC</option>
+        <option>TT</option>
+        <option>Cash</option>
+        <option>Others</option>
+      </select>
+      <button type="button" id="searchBtn">Search</button>
+      <button type="button" id="clearBtn" class="clear-btn">Clear</button>
+    </div>
+
+    <p class="result-count" id="resultCount"></p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Company</th>
+            <th>Supplies</th>
+            <th>Country</th>
+            <th>Payment</th>
+            <th>Mobile</th>
+            <th>Email</th>
+            <th>Profile</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none;">No submissions match these filters.</div>
+      <div id="loadingState" class="loading-state">Loading…</div>
+    </div>
+  </div>
+
+<script>
+  const STORAGE_KEY = 'sdf_admin_key'; // sessionStorage only — cleared when the tab closes
+  const loginScreen = document.getElementById('loginScreen');
+  const dashboard = document.getElementById('dashboard');
+  const adminKeyInput = document.getElementById('adminKeyInput');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginError = document.getElementById('loginError');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  function getStoredKey() {
+    return sessionStorage.getItem(STORAGE_KEY);
+  }
+
+  async function tryKey(key) {
+    const res = await fetch('/api/admin/suppliers', { headers: { 'x-admin-key': key } });
+    return res.status === 200;
+  }
+
+  async function showDashboard() {
+    loginScreen.style.display = 'none';
+    dashboard.style.display = 'block';
+    await runSearch();
+  }
+
+  function showLogin(errorMsg) {
+    dashboard.style.display = 'none';
+    loginScreen.style.display = 'flex';
+    if (errorMsg) {
+      loginError.textContent = errorMsg;
+      loginError.style.display = '';
+    } else {
+      loginError.style.display = 'none';
+    }
+  }
+
+  loginBtn.addEventListener('click', async () => {
+    const key = adminKeyInput.value.trim();
+    if (!key) return;
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Checking…';
+    const ok = await tryKey(key);
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Log In';
+    if (ok) {
+      sessionStorage.setItem(STORAGE_KEY, key);
+      showDashboard();
+    } else {
+      loginError.textContent = 'Incorrect key. Please try again.';
+      loginError.style.display = '';
+    }
+  });
+
+  adminKeyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loginBtn.click();
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem(STORAGE_KEY);
+    adminKeyInput.value = '';
+    showLogin();
+  });
+
+  // ── Search / results ──────────────────────────────────────
+  const COUNTRIES = ["Bangladesh","China","India","Pakistan","Vietnam","Other","Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Belgium","Brazil","Cambodia","Canada","Chile","Colombia","Denmark","Egypt","Ethiopia","Finland","France","Germany","Greece","Hong Kong","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Japan","Jordan","Kenya","South Korea","Kuwait","Laos","Lebanon","Malaysia","Mexico","Morocco","Myanmar","Nepal","Netherlands","New Zealand","Nigeria","Norway","Oman","Philippines","Poland","Portugal","Qatar","Russia","Saudi Arabia","Singapore","South Africa","Spain","Sri Lanka","Sweden","Switzerland","Taiwan","Thailand","Turkey","UAE","UK","USA","Uzbekistan"];
+  const countryFilter = document.getElementById('countryFilter');
+  COUNTRIES.forEach((c) => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    countryFilter.appendChild(opt);
+  });
+
+  const searchInput = document.getElementById('searchInput');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const paymentFilter = document.getElementById('paymentFilter');
+  const resultsBody = document.getElementById('resultsBody');
+  const resultCount = document.getElementById('resultCount');
+  const emptyState = document.getElementById('emptyState');
+  const loadingState = document.getElementById('loadingState');
+
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    try {
+      return new Date(iso + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Dhaka', dateStyle: 'medium', timeStyle: 'short' });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  async function runSearch() {
+    const key = getStoredKey();
+    if (!key) { showLogin(); return; }
+
+    loadingState.style.display = '';
+    emptyState.style.display = 'none';
+    resultsBody.innerHTML = '';
+
+    const params = new URLSearchParams();
+    if (searchInput.value.trim()) params.set('q', searchInput.value.trim());
+    if (categoryFilter.value) params.set('category', categoryFilter.value);
+    if (countryFilter.value) params.set('country', countryFilter.value);
+    if (paymentFilter.value) params.set('paymentMode', paymentFilter.value);
+
+    try {
+      const res = await fetch('/api/admin/suppliers?' + params.toString(), { headers: { 'x-admin-key': key } });
+      if (res.status === 401) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        showLogin('Session expired. Please log in again.');
+        return;
+      }
+      const data = await res.json();
+      loadingState.style.display = 'none';
+
+      if (!data.success || data.suppliers.length === 0) {
+        emptyState.style.display = '';
+        resultCount.textContent = '0 results';
+        return;
+      }
+
+      resultCount.textContent = `${data.count} result${data.count === 1 ? '' : 's'}`;
+      renderRows(data.suppliers, key);
+    } catch (err) {
+      loadingState.style.display = 'none';
+      emptyState.textContent = 'Something went wrong loading results. Please try again.';
+      emptyState.style.display = '';
+    }
+  }
+
+  function renderRows(suppliers, key) {
+    resultsBody.innerHTML = suppliers.map((s) => {
+      const proxyBadge = s.ip_is_proxy_or_vpn === 1
+        ? '<span class="badge badge--proxy">Proxy/VPN</span>'
+        : (s.ip_is_proxy_or_vpn === 0 ? '<span class="badge badge--clean">Direct</span>' : '');
+
+      const fileLink = s.has_profile_file
+        ? `<a class="file-link" href="/api/admin/suppliers/${s.id}/profile-file?key=${encodeURIComponent(key)}" target="_blank" rel="noopener">Download</a>`
+        : '—';
+
+      return `
+        <tr>
+          <td><button class="expand-btn" onclick="toggleTracking(${s.id})">Info</button></td>
+          <td class="cell-company">${escapeHtml(s.company_name)}</td>
+          <td>${escapeHtml(s.supplies)}${s.supplies_other ? ' (' + escapeHtml(s.supplies_other) + ')' : ''}</td>
+          <td>${escapeHtml(s.country)}</td>
+          <td>${escapeHtml(s.payment_mode)}</td>
+          <td>${escapeHtml(s.mobile)}</td>
+          <td>${escapeHtml(s.email)}</td>
+          <td>${fileLink}</td>
+          <td>${fmtDate(s.created_at)}</td>
+        </tr>
+        <tr class="tracking-row" id="tracking-${s.id}" style="display:none;">
+          <td colspan="9">
+            <div class="tracking-grid">
+              <div><span>Address</span><span>${escapeHtml(s.full_address)}</span></div>
+              <div><span>WhatsApp</span><span>${escapeHtml(s.whatsapp)}</span></div>
+              <div><span>Sample delivery</span><span>${escapeHtml(s.sample_delivery_time)}</span></div>
+              ${s.lab_dip_time ? `<div><span>Lab dip time</span><span>${escapeHtml(s.lab_dip_time)}</span></div>` : ''}
+              ${s.lab_dip_charge ? `<div><span>Lab dip charge</span><span>${escapeHtml(s.lab_dip_charge)}${s.lab_dip_amount ? ' (' + escapeHtml(s.lab_dip_amount) + ')' : ''}</span></div>` : ''}
+              <div><span>IP address</span><span>${escapeHtml(s.ip_address)} ${proxyBadge}</span></div>
+              <div><span>Location</span><span>${escapeHtml([s.ip_city, s.ip_country].filter(Boolean).join(', ') || '—')}</span></div>
+              <div><span>ISP</span><span>${escapeHtml(s.ip_isp)}</span></div>
+              <div><span>Browser</span><span>${escapeHtml(s.browser_name)}</span></div>
+              <div><span>OS</span><span>${escapeHtml(s.os_name)}</span></div>
+              <div><span>Device</span><span>${escapeHtml(s.device_type)}</span></div>
+              <div><span>Referrer</span><span>${escapeHtml(s.referrer) || 'Direct / none'}</span></div>
+              <div><span>Language</span><span>${escapeHtml(s.accept_language)}</span></div>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function toggleTracking(id) {
+    const row = document.getElementById('tracking-' + id);
+    row.style.display = row.style.display === 'none' ? '' : 'none';
+  }
+  window.toggleTracking = toggleTracking;
+
+  document.getElementById('searchBtn').addEventListener('click', runSearch);
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    searchInput.value = '';
+    categoryFilter.value = '';
+    countryFilter.value = '';
+    paymentFilter.value = '';
+    runSearch();
+  });
+  searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+
+  // ── Init ───────────────────────────────────────────────────
+  (function init() {
+    const key = getStoredKey();
+    if (key) {
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  })();
+</script>
+</body>
+</html>
