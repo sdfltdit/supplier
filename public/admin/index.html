@@ -28,21 +28,29 @@
     min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
   }
   .login-box {
-    background: #0a0a0a; border: 1px solid var(--color-primary); border-radius: 6px;
-    padding: 2rem; max-width: 360px; width: 100%;
+    background: #0a0a0a; border: 1px solid var(--color-border); border-radius: 10px;
+    padding: 2.5rem 2rem; max-width: 380px; width: 100%; text-align: center;
   }
-  .login-box h1 { font-size: 1.25rem; margin: 0 0 1.25rem; text-align: center; }
+  .login-box__logo { width: 72px; height: 63px; object-fit: contain; margin: 0 auto 1rem; display: block; }
+  .login-box h1 { font-size: 1.3rem; font-weight: 700; margin: 0 0 0.25rem; }
+  .login-box__subtitle { font-size: 0.8rem; color: #777; margin: 0 0 1.75rem; }
+  .login-box__field { text-align: left; margin-bottom: 1.25rem; }
+  .login-box__field label { display: block; font-size: 0.78rem; color: #aaa; margin-bottom: 0.4rem; }
   .login-box input {
-    width: 100%; background: #000; border: 1px solid var(--color-primary); color: #fff;
-    padding: 0.7rem 0.85rem; font-size: 0.9rem; border-radius: 4px; font-family: inherit; margin-bottom: 0.85rem;
+    width: 100%; background: #151515; border: 1px solid #2a2a2a; color: #fff;
+    padding: 0.75rem 0.9rem; font-size: 0.9rem; border-radius: 6px; font-family: inherit;
   }
+  .login-box input:focus { outline: none; border-color: #3fb950; }
   .login-box button {
-    width: 100%; background: var(--color-primary); color: #fff; border: none; padding: 0.75rem;
-    font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 4px;
-    cursor: pointer; font-weight: 600; font-family: inherit;
+    width: 100%; background: #2ea043; color: #fff; border: none; padding: 0.8rem;
+    font-size: 0.9rem; font-weight: 700; border-radius: 6px; cursor: pointer; font-family: inherit;
+    margin-top: 0.25rem;
   }
-  .login-box button:hover { background: var(--color-primary-dark); }
-  .login-error { color: #ff6666; font-size: 0.8rem; margin-bottom: 0.85rem; display: none; }
+  .login-box button:hover { background: #298c3b; }
+  .login-box button:disabled { background: #2a2a2a; color: #777; cursor: not-allowed; }
+  .login-error { color: #ff6666; font-size: 0.8rem; margin: 0 0 1rem; display: none; text-align: left; }
+  .login-box__footer { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #1a1a1a; font-size: 0.72rem; color: #666; display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
+  .login-box__footer-dot { width: 6px; height: 6px; border-radius: 50%; background: #3fb950; display: inline-block; }
 
   /* ── Main dashboard ───────────────────────────────────── */
   #dashboard { display: none; max-width: 1300px; margin: 0 auto; padding: 1.5rem; }
@@ -99,10 +107,16 @@
   <!-- ── Login screen ─────────────────────────────────────── -->
   <div id="loginScreen">
     <div class="login-box">
-      <h1>SDF Supplier Portal — Admin</h1>
+      <img src="/logo.jpg" alt="SDF Clothing" class="login-box__logo" />
+      <h1>Staff Dashboard</h1>
+      <p class="login-box__subtitle">Supplier Portal Access</p>
       <p class="login-error" id="loginError">Incorrect key. Please try again.</p>
-      <input type="password" id="adminKeyInput" placeholder="Admin key" autocomplete="off" />
-      <button type="button" id="loginBtn">Log In</button>
+      <div class="login-box__field">
+        <label for="adminKeyInput">Access Key</label>
+        <input type="password" id="adminKeyInput" placeholder="Enter access key" autocomplete="off" />
+      </div>
+      <button type="button" id="loginBtn">Sign In</button>
+      <div class="login-box__footer"><span class="login-box__footer-dot"></span> Secured connection · SDF Clothing © 2026</div>
     </div>
   </div>
 
@@ -207,7 +221,7 @@
     loginBtn.textContent = 'Checking…';
     const ok = await tryKey(key);
     loginBtn.disabled = false;
-    loginBtn.textContent = 'Log In';
+    loginBtn.textContent = 'Sign In';
     if (ok) {
       sessionStorage.setItem(STORAGE_KEY, key);
       showDashboard();
