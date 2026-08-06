@@ -1,0 +1,24 @@
+name = "supplier"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Non-secret vars can go here directly.
+# Real secrets (TURSO_AUTH_TOKEN, RESEND_API_KEY, ADMIN_API_KEY, TURSO_DATABASE_URL)
+# should NOT be put here — set those with:
+#   npx wrangler secret put TURSO_AUTH_TOKEN
+#   npx wrangler secret put RESEND_API_KEY
+#   npx wrangler secret put ADMIN_API_KEY
+#   npx wrangler secret put TURSO_DATABASE_URL
+# (or add them in the dashboard's Settings > Variables and secrets,
+# which only appears once this file exists and Cloudflare detects
+# a real Worker instead of static assets)
+
+[vars]
+ALLOWED_ORIGIN = "https://sdfltd.com"
+RESEND_FROM_ADDRESS = "supplier@sdfltd.com"
+RESEND_REPLY_TO_ADDRESS = "contact@sdfltd.com"
+SUPPLIER_NOTIFY_EMAIL = "sdfltdit@gmail.com"
+
+[observability]
+enabled = true
