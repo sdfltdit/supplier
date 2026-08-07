@@ -18,7 +18,7 @@ binding = "ASSETS"
 # then paste the returned id below.
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "REPLACE_WITH_ID_FROM_WRANGLER_KV_NAMESPACE_CREATE"
+id = "b635d73886a24e5d9ca4872837e2a6a4"
 
 # Non-secret vars. Real secrets (TURSO_AUTH_TOKEN, RESEND_API_KEY,
 # ADMIN_API_KEY, TURSO_DATABASE_URL) must NOT go here — set those with:
