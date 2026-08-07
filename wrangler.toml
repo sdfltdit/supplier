@@ -3,16 +3,31 @@ main = "src/index.js"
 compatibility_date = "2026-08-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Non-secret vars can go here directly.
-# Real secrets (TURSO_AUTH_TOKEN, RESEND_API_KEY, ADMIN_API_KEY, TURSO_DATABASE_URL)
-# should NOT be put here — set those with:
+# Serves everything in /public (the form page, /admin panel, logo, favicons)
+# as static assets. Any request that doesn't match a file in /public falls
+# through to the Worker script above automatically — that's how /api/* and
+# /health reach index.js without extra routing config.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Used for rate limiting (replaces express-rate-limit, which relied on
+# in-memory state that doesn't reliably persist across Worker isolates).
+# Create it once with:
+#   npx wrangler kv namespace create RATE_LIMIT_KV
+# then paste the returned id below.
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "REPLACE_WITH_ID_FROM_WRANGLER_KV_NAMESPACE_CREATE"
+
+# Non-secret vars. Real secrets (TURSO_AUTH_TOKEN, RESEND_API_KEY,
+# ADMIN_API_KEY, TURSO_DATABASE_URL) must NOT go here — set those with:
 #   npx wrangler secret put TURSO_AUTH_TOKEN
+#   npx wrangler secret put TURSO_DATABASE_URL
 #   npx wrangler secret put RESEND_API_KEY
 #   npx wrangler secret put ADMIN_API_KEY
-#   npx wrangler secret put TURSO_DATABASE_URL
-# (or add them in the dashboard's Settings > Variables and secrets,
-# which only appears once this file exists and Cloudflare detects
-# a real Worker instead of static assets)
+# (or via the dashboard's Settings > Variables and secrets, which will
+# now show up correctly since this Worker has real code, not just assets)
 
 [vars]
 ALLOWED_ORIGIN = "https://sdfltd.com"
