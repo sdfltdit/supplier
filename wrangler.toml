@@ -30,7 +30,7 @@ id = "b635d73886a24e5d9ca4872837e2a6a4"
 # now show up correctly since this Worker has real code, not just assets)
 
 [vars]
-ALLOWED_ORIGIN = "https://sdfltd.com"
+ALLOWED_ORIGIN = "https://supplier.sdfltd.com"
 RESEND_FROM_ADDRESS = "supplier@sdfltd.com"
 RESEND_REPLY_TO_ADDRESS = "contact@sdfltd.com"
 SUPPLIER_NOTIFY_EMAIL = "sdfltdit@gmail.com"
