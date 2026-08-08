@@ -1,38 +1,24 @@
 // ─────────────────────────────────────────────────────────────
-// Resend email notifications.
-// RESEND_API_KEY comes from environment variable.
-// sdfltd.com is verified in the Resend Dashboard.
-//
-// Two separate emails are sent per submission:
-//
-// 1. sendSupplierConfirmation() — goes OUT to the supplier who submitted
-//    the form, from supplier@sdfltd.com, confirming their data was
-//    received. Reply-To is set to contact@sdfltd.com, so if the supplier
-//    replies, it lands at the real SDF contact inbox, not this backend's
-//    sending address.
-//
-// 2. sendInternalNotification() — goes to SDF's own internal inbox
-//    (SUPPLIER_NOTIFY_EMAIL, e.g. sdfltdit@gmail.com) so SDF knows a new
-//    submission came in. This one is never seen by the supplier, so
-//    there's no need to hide the internal address here.
+// Resend email notifications. Same two-email behavior as before:
+// 1. sendSupplierConfirmation() -> the supplier, from supplier@sdfltd.com,
+//    Reply-To contact@sdfltd.com.
+// 2. sendInternalNotification() -> SDF's internal inbox (SUPPLIER_NOTIFY_EMAIL).
+// Reads config from `env` (Worker bindings/secrets) instead of
+// process.env, since each request gets its own env object in Workers.
 // ─────────────────────────────────────────────────────────────
 import { Resend } from 'resend';
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error('Missing RESEND_API_KEY environment variable.');
-}
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'onboarding@resend.dev'; // e.g. supplier@sdfltd.com
-const REPLY_TO_ADDRESS = process.env.RESEND_REPLY_TO_ADDRESS || FROM_ADDRESS;    // e.g. contact@sdfltd.com — where supplier replies should land
-const INTERNAL_NOTIFY_TO = process.env.SUPPLIER_NOTIFY_EMAIL;                    // e.g. sdfltdit@gmail.com — SDF's own inbox, internal only
-
-// Strip CR/LF from anything going into an email Subject header — form
-// input is public/unauthenticated, and a newline there could be used to
-// inject extra email headers.
 function safeSubjectPart(str) {
   return String(str ?? '').replace(/[\r\n]/g, ' ');
+}
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function buildRecordSummaryHtml(record) {
@@ -81,12 +67,15 @@ function emailWrapper(bodyHtml) {
   `;
 }
 
-// ── 1. Confirmation email TO the supplier ──────────────────────
-export async function sendSupplierConfirmation(record) {
+export async function sendSupplierConfirmation(record, env) {
   if (!record.email) {
     console.warn('No supplier email on record — skipping confirmation email.');
     return { skipped: true };
   }
+
+  const resend = new Resend(env.RESEND_API_KEY);
+  const FROM_ADDRESS = env.RESEND_FROM_ADDRESS || 'onboarding@resend.dev';
+  const REPLY_TO_ADDRESS = env.RESEND_REPLY_TO_ADDRESS || FROM_ADDRESS;
 
   const body = `
     <p style="font-size:15px;line-height:1.6;margin:0 0 8px;">Dear ${escapeHtml(record.company_name)},</p>
@@ -112,23 +101,24 @@ export async function sendSupplierConfirmation(record) {
   });
 
   if (error) {
-    // Don't throw — a failed confirmation email should not fail the
-    // submission. The record is already saved in Turso by this point.
     console.error('Supplier confirmation email failed:', error);
     return { success: false, error };
   }
   return { success: true, data };
 }
 
-// ── 2. Internal notification TO SDF's own inbox ─────────────────
-export async function sendInternalNotification(record) {
+export async function sendInternalNotification(record, env) {
+  const INTERNAL_NOTIFY_TO = env.SUPPLIER_NOTIFY_EMAIL;
   if (!INTERNAL_NOTIFY_TO) {
     console.warn('SUPPLIER_NOTIFY_EMAIL not set — skipping internal notification.');
     return { skipped: true };
   }
 
-  const submittedAt = new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka', dateStyle: 'medium', timeStyle: 'short' });
+  const resend = new Resend(env.RESEND_API_KEY);
+  const FROM_ADDRESS = env.RESEND_FROM_ADDRESS || 'onboarding@resend.dev';
+  const REPLY_TO_ADDRESS = env.RESEND_REPLY_TO_ADDRESS || FROM_ADDRESS;
 
+  const submittedAt = new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka', dateStyle: 'medium', timeStyle: 'short' });
   const locationParts = [record.ip_city, record.ip_country].filter(Boolean).join(', ');
 
   const trackingRows = [
@@ -166,10 +156,6 @@ export async function sendInternalNotification(record) {
     replyTo: REPLY_TO_ADDRESS,
     subject: `New Supplier: ${safeSubjectPart(record.company_name)}`,
     html: emailWrapper(body),
-    // Attach the uploaded PDF directly (base64, already stored that way in
-    // Turso) when one exists, so staff have it in-hand without a separate
-    // admin-API call. Omitted entirely when there's no file rather than
-    // sending an empty/null attachments array.
     ...(record.profile_file_data
       ? { attachments: [{ filename: record.profile_file_name || 'company-profile.pdf', content: record.profile_file_data }] }
       : {}),
@@ -180,13 +166,4 @@ export async function sendInternalNotification(record) {
     return { success: false, error };
   }
   return { success: true, data };
-}
-
-function escapeHtml(str) {
-  if (str == null) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
