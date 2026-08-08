@@ -86,9 +86,10 @@
   .badge--clean { background: rgba(63,185,80,0.15); color: #3fb950; }
   .file-link { color: var(--color-primary); text-decoration: none; font-size: 0.78rem; }
   .file-link:hover { text-decoration: underline; }
-  .expand-btn { background: none; border: 1px solid var(--color-border); color: var(--color-text-muted); border-radius: 4px; padding: 0.2rem 0.5rem; cursor: pointer; font-size: 0.72rem; font-family: inherit; }
-  .expand-btn:hover { border-color: var(--color-primary); color: #fff; }
+  .company-link { color: #fff; text-decoration: none; cursor: pointer; border-bottom: 1px dashed #555; }
+  .company-link:hover { color: var(--color-primary); border-bottom-color: var(--color-primary); }
   .tracking-row td { background: #050505; padding: 0.85rem; }
+  .tracking-section-title { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); font-weight: 700; margin-bottom: 0.6rem; }
   .tracking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem 1.5rem; }
   .tracking-grid div span:first-child { display: block; color: #666; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .tracking-grid div span:last-child { color: #ccc; font-size: 0.78rem; word-break: break-word; }
@@ -161,7 +162,6 @@
       <table>
         <thead>
           <tr>
-            <th></th>
             <th>Company</th>
             <th>Supplies</th>
             <th>Country</th>
@@ -323,8 +323,7 @@
 
       return `
         <tr>
-          <td><button class="expand-btn" onclick="toggleTracking(${s.id})">Info</button></td>
-          <td class="cell-company">${escapeHtml(s.company_name)}</td>
+          <td class="cell-company"><a href="javascript:void(0)" class="company-link" onclick="toggleTracking(${s.id})">${escapeHtml(s.company_name)}</a></td>
           <td>${escapeHtml(s.supplies)}${s.supplies_other ? ' (' + escapeHtml(s.supplies_other) + ')' : ''}</td>
           <td>${escapeHtml(s.country)}</td>
           <td>${escapeHtml(s.payment_mode)}</td>
@@ -334,13 +333,24 @@
           <td>${fmtDate(s.created_at)}</td>
         </tr>
         <tr class="tracking-row" id="tracking-${s.id}" style="display:none;">
-          <td colspan="9">
+          <td colspan="8">
+            <div class="tracking-section-title">Details</div>
             <div class="tracking-grid">
-              <div><span>Address</span><span>${escapeHtml(s.full_address)}</span></div>
+              <div><span>Company / Individual</span><span>${escapeHtml(s.company_name)}</span></div>
+              <div><span>Supplies</span><span>${escapeHtml(s.supplies)}${s.supplies_other ? ' (' + escapeHtml(s.supplies_other) + ')' : ''}</span></div>
+              <div><span>Country</span><span>${escapeHtml(s.country)}</span></div>
+              <div><span>Payment mode</span><span>${escapeHtml(s.payment_mode)}</span></div>
+              <div><span>Mobile</span><span>${escapeHtml(s.mobile)}</span></div>
               <div><span>WhatsApp</span><span>${escapeHtml(s.whatsapp)}</span></div>
+              <div><span>Email</span><span>${escapeHtml(s.email)}</span></div>
+              <div><span>Address</span><span>${escapeHtml(s.full_address)}</span></div>
               <div><span>Sample delivery</span><span>${escapeHtml(s.sample_delivery_time)}</span></div>
               ${s.lab_dip_time ? `<div><span>Lab dip time</span><span>${escapeHtml(s.lab_dip_time)}</span></div>` : ''}
               ${s.lab_dip_charge ? `<div><span>Lab dip charge</span><span>${escapeHtml(s.lab_dip_charge)}${s.lab_dip_amount ? ' (' + escapeHtml(s.lab_dip_amount) + ')' : ''}</span></div>` : ''}
+            </div>
+            <div class="tracking-section-title" style="margin-top:1rem;">Submission Tracking (internal)</div>
+            <div class="tracking-grid">
+              <div><span>Submitted</span><span>${fmtDate(s.created_at)}</span></div>
               <div><span>IP address</span><span>${escapeHtml(s.ip_address)} ${proxyBadge}</span></div>
               <div><span>Location</span><span>${escapeHtml([s.ip_city, s.ip_country].filter(Boolean).join(', ') || '—')}</span></div>
               <div><span>ISP</span><span>${escapeHtml(s.ip_isp)}</span></div>
